@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination, Autoplay, EffectFade } from "swiper/modules";
+import { Pagination, Autoplay } from "swiper/modules";
 import { 
   Sparkles, ArrowRight, Truck, Store, MapPin, 
   ChevronDown, Layers, ShieldCheck, HeartPulse, HelpCircle 
@@ -100,12 +100,12 @@ export default function HomePage() {
         {/* Floating Interactive Micro Liquid Glass Droplets tracking Cursor */}
         <motion.div
           animate={{ x: mousePosition.x, y: mousePosition.y }}
-          transition={{ type: "smooth", damping: 15 }}
+          transition={{ type: "spring", damping: 15 }}
           className="absolute top-1/4 right-1/4 w-32 h-32 hidden lg:block border border-gold-metallic/30 bg-white/5 dark:bg-white/5 backdrop-blur-md animate-liquid-shape pointer-events-none z-10"
         />
         <motion.div
           animate={{ x: -mousePosition.x, y: -mousePosition.y }}
-          transition={{ type: "smooth", damping: 20 }}
+          transition={{ type: "spring", damping: 20 }}
           className="absolute bottom-1/4 left-1/4 w-24 h-24 hidden lg:block border border-cyan-400/20 bg-white/5 dark:bg-white/5 backdrop-blur-md animate-liquid-shape pointer-events-none z-10"
         />
 
@@ -258,7 +258,7 @@ export default function HomePage() {
                         </div>
                       </SwiperSlide>
                       <SwiperSlide>
-                        <div className="liquid-glass-light dark:liquid-glass-dark p-6 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 h-full hover:scale-[1.03] transition-transform duration-300">
+                        <div className="liquid-glass-light dark:liquid-glass-dark p-6 rounded-2xl border border-navy-deep/10 dark:border-white/10 h-full hover:scale-[1.03] transition-transform duration-300">
                           <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-6"><Layers className="w-6 h-6" /></div>
                           <h3 className="text-lg font-bold mb-2">02. Dynamic Queue</h3>
                           <p className="text-sm text-slate-blue dark:text-platinum leading-relaxed mb-4">Receive dynamic digital receipt manifests instantly via automated matrix tracking systems straight to your dashboard profile.</p>
