@@ -101,11 +101,11 @@ export default function HomePage() {
 
   return (
     <div className="w-full pt-20">
-      {/* SECTION 01: HERO */}
+      {/* SECTION 01: HERO – reduced height on mobile */}
       <section
         id="home"
         ref={heroRef}
-        className="relative w-full min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 py-12"
+        className="relative w-full min-h-[80vh] lg:min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 py-12"
       >
         {/* Animated backgrounds */}
         <motion.div
@@ -137,8 +137,6 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="lg:col-span-7 flex flex-col justify-center text-left"
           >
-            {/* Profile tag REMOVED */}
-
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] mb-6">
               Laundry Done Right, <br />
               <span className="bg-gradient-to-r from-gold-polished via-gold-metallic to-gold-pastel bg-clip-text text-transparent">
@@ -191,7 +189,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 02: HOW IT WORKS */}
+      {/* SECTION 02: HOW IT WORKS – unchanged */}
       <section
         id="how-it-works"
         className="w-full py-24 bg-white/20 dark:bg-navy-deep/20 border-y border-navy-deep/5 dark:border-white/5 px-4 sm:px-6 lg:px-8"
@@ -388,7 +386,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 03: SERVICES ACCORDION */}
+      {/* SECTION 03: SERVICES ACCORDION – unchanged */}
       <section
         id="services"
         className="w-full py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
@@ -483,7 +481,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 04: WHY TT (Refactored for clarity and tablet stability) */}
+      {/* SECTION 04: WHY TT – completely stable, no glass morphism */}
       <section
         id="why-tt"
         className="w-full py-24 bg-gradient-to-b from-transparent to-navy-deep/5 dark:to-navy-deep/40 px-4 sm:px-6 lg:px-8"
@@ -499,9 +497,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Using a grid with min-height to prevent broken layouts on tablets */}
+          {/* Stable flat cards – no backdrop-filter, no liquid-glass */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
-            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white dark:bg-navy-light p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/20 shadow-sm hover:shadow-md transition-shadow min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <ShieldCheck className="w-6 h-6" />
@@ -517,7 +515,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white dark:bg-navy-light p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/20 shadow-sm hover:shadow-md transition-shadow min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <HeartPulse className="w-6 h-6" />
@@ -532,7 +530,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white dark:bg-navy-light p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/20 shadow-sm hover:shadow-md transition-shadow min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <Layers className="w-6 h-6" />
@@ -548,7 +546,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white dark:bg-navy-light p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/20 shadow-sm hover:shadow-md transition-shadow min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <HelpCircle className="w-6 h-6" />
@@ -566,7 +564,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 05: COVERAGE */}
+      {/* SECTION 05: COVERAGE – unchanged */}
       <section
         id="coverage"
         className="w-full py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
@@ -643,7 +641,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 06: CALL TO ACTION */}
+      {/* SECTION 06: CALL TO ACTION – unchanged */}
       <section
         id="scheduler"
         className="w-full py-28 relative overflow-hidden bg-gradient-to-tr from-gold-polished via-gold-metallic to-gold-pastel text-canvas-dark px-4 sm:px-6 lg:px-8 text-center"
