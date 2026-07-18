@@ -501,7 +501,7 @@ export default function HomePage() {
 
           {/* Using a grid with min-height to prevent broken layouts on tablets */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
-            <div className="liquid-glass-light dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <ShieldCheck className="w-6 h-6" />
@@ -517,7 +517,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="liquid-glass-light dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <HeartPulse className="w-6 h-6" />
@@ -532,7 +532,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="liquid-glass-light dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <Layers className="w-6 h-6" />
@@ -548,7 +548,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="liquid-glass-light dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
+            <div className="bg-white/70 dark:bg-navy-deep/70 lg:liquid-glass-light lg:dark:liquid-glass-dark p-6 sm:p-8 rounded-2xl border border-navy-deep/10 dark:border-gold-metallic/15 hover:border-gold-polished/50 dark:hover:border-gold-metallic/50 transition-colors min-h-[220px] flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-gold-polished/10 dark:bg-gold-metallic/10 flex items-center justify-center text-gold-polished dark:text-gold-metallic mb-4">
                   <HelpCircle className="w-6 h-6" />
