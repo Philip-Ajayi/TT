@@ -1,50 +1,52 @@
 @import "tailwindcss";
 
-/* Theme variables */
-@theme {
-  --color-gold: #D4AF37;
-  --color-gold-light: #F3E5AB;
-  --color-navy: #0A192F;
-  --color-navy-light: #172A45;
-  --color-dark-bg: #020C1B;
-  --color-light-bg: #F5F7FA;
-}
-
-/* Custom variant for dark mode (no tailwind.config.ts) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Base styles */
+@theme {
+  --color-canvas-dark: #020c1b;
+  --color-canvas-light: #f5f7fa;
+  --color-navy-deep: #0a192f;
+  --color-navy-light: #172a45;
+  --color-gold-metallic: #d4af37;
+  --color-gold-pastel: #f3e5ab;
+  --color-gold-polished: #c5a028;
+  --color-obsidian: #0a192f;
+  --color-platinum: #a8b2d1;
+  --color-slate-blue: #4a5568;
+  --color-alabaster: #f8f9fa;
+}
+
+/* Liquid Glass Morphing Custom Properties */
+@utility liquid-glass-dark {
+  background: rgba(10, 25, 47, 0.2);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+@utility liquid-glass-light {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(10, 25, 47, 0.1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  @apply bg-light-bg text-navy transition-colors duration-300;
-}
-.dark body {
-  @apply bg-dark-bg text-white;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
-/* Liquid glass utility (custom) */
-.glass {
-  @apply bg-white/40 backdrop-blur-[20px] border border-white/20;
-}
-.dark .glass {
-  @apply bg-navy/20 backdrop-blur-[25px] border border-gold/15;
-}
-
-/* Organic border-radius for liquid effect */
-.liquid-glass {
-  border-radius: 60% 40% 70% 30% / 40% 50% 60% 50%;
-  transition: border-radius 0.6s ease-in-out;
-}
-.liquid-glass:hover {
-  border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+/* Organic morphing for structural glass shapes */
+@keyframes liquidMorph {
+  0% { border-radius: 60% 40% 70% 30% / 40% 50% 60% 50%; }
+  50% { border-radius: 45% 55% 50% 50% / 55% 40% 60% 45%; }
+  100% { border-radius: 60% 40% 70% 30% / 40% 50% 60% 50%; }
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-navy/10;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-gold rounded-full;
+.animate-liquid-shape {
+  animation: liquidMorph 8s ease-in-out infinite alternate;
 }

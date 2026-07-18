@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import { ThemeProvider } from "next-themes";
+import { SessionProvider } from "@/components/providers/session-provider";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { ThemeProvider } from "next-themes";
-
-const inter = Inter({ subsets: ["latin"] });
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TT Laundry – Premium Fabric Care",
-  description: "Doorstep valet & luxury laundry services in Ibadan.",
+  title: "TT Laundry | Premium Fabric Care Ecosystem",
+  description: "The Absolute Pinnacle of Fabric Reclamation & Luxury Care in Ibadan.",
 };
 
 export default function RootLayout({
@@ -19,12 +17,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <body className="bg-canvas-light text-obsidian dark:bg-canvas-dark dark:text-alabaster antialiased overflow-x-hidden">
+        <SessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={true}>
             <Navbar />
-            <main className="min-h-screen pt-20">{children}</main>
+            <main>{children}</main>
             <Footer />
-        </ThemeProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );
