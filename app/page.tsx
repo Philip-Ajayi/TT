@@ -105,7 +105,7 @@ export default function HomePage() {
       <section
         id="home"
         ref={heroRef}
-        className="relative w-full min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 py-12"
+        className="relative w-full min-h-0 lg:min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 pt-28 pb-16 lg:py-12"
       >
         {/* Animated backgrounds */}
         <motion.div
