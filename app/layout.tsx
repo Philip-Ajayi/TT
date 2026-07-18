@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-import { SessionProvider } from "@/components/providers/session-provider";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import "./globals.css";
@@ -18,13 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-canvas-light text-obsidian dark:bg-canvas-dark dark:text-alabaster antialiased overflow-x-hidden">
-        <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={true}>
             <Navbar />
             <main>{children}</main>
             <Footer />
           </ThemeProvider>
-        </SessionProvider>
       </body>
     </html>
   );
