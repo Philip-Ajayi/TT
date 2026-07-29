@@ -8,9 +8,22 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { nextUrl } = req;
   const isAuthenticated = !!req.auth;
-  const userRole = (req.auth?.user as any)?.role; // 'customer' | 'admin' | 'superadmin'
+  const userRole = (req.auth?.user as any)?.role;
 
   const currentPath = nextUrl.pathname;
+
+  // --- PUBLIC ROUTES (no authentication required) ---
+  const publicRoutes = [
+    '/',
+    '/contact',
+    '/login',
+    '/signup',
+    '/admin/login',
+    '/admin/signup',
+  ];
+  if (publicRoutes.includes(currentPath)) {
+    return NextResponse.next();
+  }
 
   // --- ROUTE CATEGORIES ---
 
@@ -40,7 +53,7 @@ export default auth((req) => {
     if (isCustomerProtectedRoute) {
       return NextResponse.redirect(new URL('/login', nextUrl));
     }
-    // Public routes (e.g., /, /signup) – allow
+    // All other routes (should not hit, but just in case) → allow
     return NextResponse.next();
   }
 
