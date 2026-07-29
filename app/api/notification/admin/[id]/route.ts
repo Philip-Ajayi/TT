@@ -1,18 +1,18 @@
-//app/api/notification/admin/[id]/route.ts
-import { NextResponse } from 'next/server';
+// app/api/notification/admin/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authCheck = await validateRouteAuth(false); // admin/superadmin only
   if (authCheck.error) return authCheck.error;
   const session = authCheck.session!;
   const user = session.user as any;
 
-  const notificationId = params.id;
+  const { id: notificationId } = await params;   // ← Await the promise
 
   try {
     const notification = await prisma.companyNotification.findUnique({
