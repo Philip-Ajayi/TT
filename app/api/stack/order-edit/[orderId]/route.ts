@@ -1,11 +1,11 @@
 // app/api/stack/order-edit/[orderId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { orderId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
