@@ -19,6 +19,9 @@ export default function ServicesPage() {
   // Track which cloth type is selected for each item
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
+  // --- Fallback currency code for display ---
+  const displayCurrency = currency?.code || 'NGN';
+
   useEffect(() => {
     let active = true;
     async function loadCatalogData() {
@@ -64,7 +67,6 @@ export default function ServicesPage() {
       variantName?: string;
     }
   ) => {
-    // 🔥 No default processing rule or delivery mode – leave as "Choose one"
     let displayName = item.name;
     if (type === 'variant') {
       displayName = `${item.name} (${context.clothName || ''})`;
@@ -78,9 +80,9 @@ export default function ServicesPage() {
       id: `${type}_${item.id}_${Date.now()}`,
       type,
       name: displayName,
-      processingRuleId: '',        // ← empty = "Choose one"
+      processingRuleId: '',
       quantity: 1,
-      deliveryMode: null,          // ← null = "Choose one"
+      deliveryMode: null,
       basePriceNgn: item.price || null,
       finalPrice: item.price || null,
       isSpecial: !!item.isspecial || !item.price,
@@ -166,7 +168,7 @@ export default function ServicesPage() {
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />
                         <span className="text-[11px]">
-                          {cloth.price ? `${currency?.code} ${cloth.price.toFixed(2)}` : "Special"}
+                          {cloth.price ? `${displayCurrency} ${cloth.price.toFixed(2)}` : "Special"}
                         </span>
                       </button>
                     )}
@@ -226,7 +228,7 @@ export default function ServicesPage() {
                                 >
                                   <ShoppingCart className="w-2.5 h-2.5" />
                                   <span className="text-[9px] font-black">
-                                    {variant.price ? `${currency?.code} ${variant.price.toFixed(2)}` : "Special"}
+                                    {variant.price ? `${displayCurrency} ${variant.price.toFixed(2)}` : "Special"}
                                   </span>
                                 </button>
                               )}
@@ -264,7 +266,7 @@ export default function ServicesPage() {
                                 >
                                   <ShoppingCart className="w-2.5 h-2.5 text-gold-polished dark:text-gold-metallic" />
                                   <span>
-                                    {vps.price ? `${currency?.code} ${vps.price.toFixed(2)}` : "Special"}
+                                    {vps.price ? `${displayCurrency} ${vps.price.toFixed(2)}` : "Special"}
                                   </span>
                                 </button>
                               </div>
@@ -298,7 +300,7 @@ export default function ServicesPage() {
                               >
                                 <ShoppingCart className="w-2.5 h-2.5 text-gold-polished dark:text-gold-metallic" />
                                 <span>
-                                  {hasPrice ? `${currency?.code} ${cps.price.toFixed(2)}` : "Special"}
+                                  {hasPrice ? `${displayCurrency} ${cps.price.toFixed(2)}` : "Special"}
                                 </span>
                               </button>
                             </div>
