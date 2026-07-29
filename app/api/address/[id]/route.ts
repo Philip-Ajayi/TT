@@ -1,12 +1,11 @@
 // app/api/address/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 
-// 1. PATCH Handler: Update/Toggle Address Status
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
@@ -20,7 +19,7 @@ export async function PATCH(
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;   // ← await the promise
     const body = await req.json();
     const { isActive } = body;
 
@@ -32,7 +31,6 @@ export async function PATCH(
       );
     }
 
-    // Simply update the target address without touching others
     await prisma.companyAddress.update({
       where: { id },
       data: { isActive: Boolean(isActive) },
@@ -47,10 +45,9 @@ export async function PATCH(
   }
 }
 
-// 2. DELETE Handler: Existing Delete Logic
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
@@ -64,7 +61,7 @@ export async function DELETE(
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;   // ← await the promise
 
     const existing = await prisma.companyAddress.findUnique({ where: { id } });
     if (!existing) {
