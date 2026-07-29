@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String            @id @default(cuid())
+  name          String?
+  email         String            @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          String            @default("customer")
+  adminApproved Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  notifications Notification[]
+  addressBook   CustomerAddress[]
+  workplaces    CompanyAddress[]  @relation("UserWorkplaces")
+  @@index([email])
+  @@index([name])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Cloth {
+  id              String                @id @default(cuid())
+  name            String
+  description     String?
+  imageUrl        String?
+  basePrice       Decimal?              @db.Decimal(10, 2)
+  isPriceNull     Boolean               @default(false)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  variants        Variant[]
+  partialServices ClothPartialService[]
+}
+
+model Variant {
+  id              String                  @id @default(cuid())
+  name            String
+  price           Decimal?                @db.Decimal(10, 2)
+  isPriceNull     Boolean                 @default(false)
+  clothId         String
+  cloth           Cloth                   @relation(fields: [clothId], references: [id], onDelete: Cascade)
+  partialServices VariantPartialService[]
+}
+
+model ClothPartialService {
+  id        String     @id @default(cuid())
+  clothId   String
+  cloth     Cloth      @relation(fields: [clothId], references: [id], onDelete: Cascade)
+  name      String
+  price     Decimal    @db.Decimal(10, 2)
+}
+
+model VariantPartialService {
+  id        String   @id @default(cuid())
+  variantId String
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+}
+
+model Currency {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  multiplier Decimal  @db.Decimal(10, 4)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model DiscountRule {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  type       String   
+  percentage Decimal  @db.Decimal(5, 2)
+  capNaira   Decimal? @db.Decimal(10, 2)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ProcessingRule {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  multiplier     Decimal         @db.Decimal(5, 4)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model DeliverySetup1 {
+  id           String   @id @default(cuid())
+  miles        String   
+  pricePerMile Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model DeliverySetup2 {
+  id         String   @id @default(cuid())
+  quantity   String   
+  multiplier Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model CompanyAddress {
+  id           String                @id @default(cuid())
+  address      String
+  latitude     Float
+  longitude    Float
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  orders       Order[]
+  notifications CompanyNotification[]
+  workers      User[]                @relation("UserWorkplaces")
+  expenses     Expense[] 
+}
+
+model CustomerAddress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String?
+  address   String
+  latitude  Float
+  longitude Float
+  isDefault Boolean  @default(false)
+
+  @@unique([userId, label])
+}
+
+model Order {
+  id                    String          @id
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber           String
+  totalAmount           Decimal?        @db.Decimal(12, 2)
+  currencyCode          String
+  totalpickdeliveryfee  Decimal?        @db.Decimal(10, 2)
+  totalreturndeliveryfee Decimal?       @db.Decimal(10, 2)
+  totalserviceamount    Decimal?        @db.Decimal(12, 2)
+  netamount             Decimal?        @db.Decimal(12, 2)
+  discountAmount        Decimal?        @db.Decimal(12, 2)
+  discountRuleId        String?
+  discountRuleCode      String?
+  paymentDate           DateTime?       // optional date of payment
+  status                String          @default("Order received")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  deliveryGroups        DeliveryGroup[]
+  adminLogs             AdminLog[]
+  companyAddressId      String?
+  companyAddress        CompanyAddress? @relation(fields: [companyAddressId], references: [id], onDelete: SetNull)
+
+  // Existing indexes
+  @@index([userId])
+  @@index([companyAddressId])
+  @@index([createdAt])
+  // New indexes for dashboard queries
+  @@index([status])
+  @@index([createdAt, status])
+  @@index([paymentDate])
+  @@index([currencyCode])
+  @@index([userId, createdAt])      // helps per‑user date‑range queries
+}
+
+model DeliveryGroup {
+  id                 String           @id
+  orderId            String
+  order              Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryMode       String           
+  processingRuleId   String
+  processingRuleName String?
+  pickAddressId      String?
+  pickLocation       String?
+  returnAddressId    String?
+  returnLocation     String?
+  miles              Float?            @default(0.0)
+  pickdeliveryfee    Decimal?         @db.Decimal(10, 2) @default(0.0)
+  returndeliveryfee  Decimal?         @db.Decimal(10, 2) @default(0.0)
+  status             String?
+  pickdeliverycode   String?          
+  returndeliverycode String?
+  groupNumber        Int
+  subOrders          SubOrder[]
+}
+
+model SubOrder {
+  id                      String        @id @default(cuid())
+  deliveryGroupId         String
+  deliveryGroup           DeliveryGroup @relation(fields: [deliveryGroupId], references: [id], onDelete: Cascade)
+  clothId                 String?
+  variantId               String?
+  clothPartialServiceId   String?
+  variantPartialServiceId String?
+  subOrderName            String?
+  quantity                Int
+  finalPrice              Decimal?      @db.Decimal(10, 2)
+  status                  String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String
+  orderId   String?
+  createdAt DateTime @default(now())
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  adminName String?
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  action    String
+  targetId  String?
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model CustomerOrderSequence {
+  customerPrefix  String @id
+  lastOrderNumber Int    @default(0)
+}
+
+model OrderNumberCounter {
+  id              String @id @default(cuid())
+  customerId      String @unique
+  currentNthOrder Int    @default(0)
+}
+
+model CompanyNotification {
+  id               String          @id @default(cuid())
+  title            String
+  message          String
+  type             String   
+  orderId          String?
+  read             Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  companyAddressId String?
+  companyAddress   CompanyAddress? @relation(fields: [companyAddressId], references: [id], onDelete: SetNull)
+}
+
+model Expense {
+  id               String          @id @default(cuid())
+  companyAddressId String
+  companyAddress   CompanyAddress  @relation(fields: [companyAddressId], references: [id])
+  currencyCode     String          @default("NGN")
+  Amount           Decimal?        @db.Decimal(12, 2)
+  category         String
+  creator          String?
+  approvedBy       String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // New indexes for dashboard queries (expense sums and date filters)
+  @@index([createdAt])
+  @@index([currencyCode])
+  @@index([createdAt, currencyCode])
+}
