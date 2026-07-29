@@ -1,17 +1,17 @@
 // app/api/dashboard/user/[userId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 
 export async function GET(
-  req: Request,
-  { params }: { params: { userId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   // Admin only
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
 
-  const { userId } = params;
+  const { userId } = await params;  // ← Await the promise
   const { searchParams } = new URL(req.url);
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
