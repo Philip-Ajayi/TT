@@ -173,7 +173,7 @@ export default function AdminSignupPage() {
 
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/admin/address?role=admin" })}
+          onClick={() => signIn("google", { callbackUrl: "/admin?role=admin" })}
           className="w-full py-3 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/50 dark:bg-navy-deep/50 hover:bg-gold-metallic/5 text-xs font-bold text-navy-deep dark:text-alabaster flex items-center justify-center gap-3 transition-all"
         >
           <Shield className="w-4 h-4 text-gold-polished" />

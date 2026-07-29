@@ -1,7 +1,7 @@
 // app/(customer)/profile/page.tsx
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, 
@@ -18,7 +18,9 @@ import {
   ChevronDown,
   ChevronUp,
   Pencil,
-  Save
+  Save,
+  Upload,
+  Camera,
 } from "lucide-react";
 
 interface Address {
@@ -34,6 +36,7 @@ interface UserProfile {
   companyAddressName: string | null;
   hasPassword: boolean;
   hasGoogleCredential: boolean;
+  image: string | null;          // added field
   addresses: Address[];
 }
 
@@ -41,6 +44,12 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Profile image state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Form Management states
   const [isEditingName, setIsEditingName] = useState(false);
@@ -84,6 +93,49 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // ---------- Profile image handlers ----------
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleCancelImageUpload = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const handleUploadImage = async () => {
+    if (!imageFile) return;
+    setIsUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("action", "changeImage");
+      formData.append("image", imageFile);
+
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+
+      // Update local profile with the new image URL
+      setProfile((prev) => prev ? { ...prev, image: data.imageUrl } : null);
+      handleCancelImageUpload(); // clear file/preview
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   // Update Display Name Handler
   const handleUpdateName = async () => {
@@ -305,7 +357,71 @@ export default function ProfilePage() {
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
               <User className="w-4 h-4 text-gold-polished" /> Personal Parameters
             </h3>
-            
+
+            {/* ----- PROFILE IMAGE SECTION ----- */}
+            <div className="mb-6 flex flex-col items-center">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gold-polished/30 mb-3">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : profile.image ? (
+                  <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-navy-deep/10 dark:bg-white/10 flex items-center justify-center">
+                    <User className="w-10 h-10 text-slate-400" />
+                  </div>
+                )}
+                {isUploadingImage && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!imageFile ? (
+                  <button
+                    onClick={() => imageInputRef.current?.click()}
+                    className="flex items-center gap-1 text-xs font-bold text-gold-polished hover:underline"
+                    disabled={isUploadingImage}
+                  >
+                    <Camera className="w-3.5 h-3.5" /> Change Picture
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleUploadImage}
+                      disabled={isUploadingImage}
+                      className="px-3 py-1 rounded-lg bg-gold-polished text-white text-xs font-bold flex items-center gap-1"
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5" /> Save
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleCancelImageUpload}
+                      disabled={isUploadingImage}
+                      className="px-3 py-1 rounded-lg border border-red-500/30 text-red-500 text-xs font-bold flex items-center gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" /> Cancel
+                    </button>
+                  </>
+                )}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+              </div>
+              <p className="text-[9px] text-slate-400 mt-1">JPEG, PNG, WEBP (max 5MB)</p>
+            </div>
+
             <div className="space-y-6">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Display Profile Identifier Name</label>

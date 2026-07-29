@@ -1,31 +1,32 @@
 //app/(admin)/admin/cloth/new/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Swiper as SwiperClass } from 'swiper';
-import { 
-  Shirt, 
-  Tag, 
-  DollarSign, 
-  Sparkles, 
-  Plus, 
-  Trash2, 
-  ArrowRight, 
-  ArrowLeft, 
-  Check, 
+import {
+  Shirt,
+  Tag,
+  DollarSign,
+  Sparkles,
+  Plus,
+  Trash2,
+  ArrowRight,
+  ArrowLeft,
+  Check,
   AlertCircle,
   HelpCircle,
   Layers,
   Wrench,
-  Image as ImageIcon
+  Image as ImageIcon,
+  UploadCloud,
 } from 'lucide-react';
 
 import 'swiper/css';
 
-// TypeScript Interfaces for Form State
+// TypeScript Interfaces
 interface VariantPartialServiceInput {
   name: string;
   price: number | '';
@@ -55,23 +56,25 @@ export default function CreateClothPage() {
   // --- Step 1: Basic Item Details ---
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>(''); // fallback URL input
+  const [imageFile, setImageFile] = useState<File | null>(null); // file upload
+  const [imagePreview, setImagePreview] = useState<string | null>(null); // preview
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [pricingMode, setPricingMode] = useState<'standard' | 'special' | 'noservice'>('standard');
   const [basePrice, setBasePrice] = useState<number | ''>('');
 
   // --- Step 2: Path Choice ---
   const [chosenPath, setChosenPath] = useState<'submit' | 'variant' | 'partial'>('submit');
 
-  // --- Step 3: Types (formerly Variants) Data ---
+  // --- Step 3: Variants ---
   const [variants, setVariants] = useState<VariantInput[]>([]);
 
-  // --- Step 4: Individual Services (formerly Top-Level Partial Services) Data ---
+  // --- Step 4: Individual Services ---
   const [clothPartialServices, setClothPartialServices] = useState<ClothPartialServiceInput[]>([]);
 
-  // Lock checking based on Step 1 pricing
   const hasBasePriceInStep1 = pricingMode === 'standard' && basePrice !== '' && Number(basePrice) > 0;
 
-  // Swiper Slide Controls & Navigation
   const goToStep = (index: number) => {
     if (swiper) {
       swiper.slideTo(index);
@@ -79,7 +82,27 @@ export default function CreateClothPage() {
     }
   };
 
-  // --- Step 1 Validation & Next Button Handler ---
+  // --- Image File Handler ---
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImageUrl(''); // clear URL fallback
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearFile = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // --- Step 1 Validation & Next ---
   const handleStep1Next = () => {
     setErrorMessage(null);
     if (!name.trim()) {
@@ -91,7 +114,6 @@ export default function CreateClothPage() {
       return;
     }
 
-    // Auto-lock path choice if base price is filled
     if (hasBasePriceInStep1) {
       setChosenPath('partial');
     }
@@ -99,72 +121,44 @@ export default function CreateClothPage() {
     goToStep(1);
   };
 
-  // --- Step 2 Decision Handler ---
+  // --- Step 2 Decision ---
   const handleStep2Next = () => {
     setErrorMessage(null);
     if (chosenPath === 'submit') {
       handleSubmit();
     } else if (chosenPath === 'variant') {
-      if (variants.length === 0) {
-        addVariant();
-      }
+      if (variants.length === 0) addVariant();
       goToStep(2);
     } else if (chosenPath === 'partial') {
-      if (clothPartialServices.length === 0) {
-        addClothPartialService();
-      }
+      if (clothPartialServices.length === 0) addClothPartialService();
       goToStep(3);
     }
   };
 
-  // --- Variant (Type) Handlers (Step 3) ---
+  // --- Variant Handlers ---
   const addVariant = () => {
-    setVariants((prev) => [
-      ...prev,
-      { name: '', price: '', isPriceNull: false, partialServices: [] },
-    ]);
+    setVariants((prev) => [...prev, { name: '', price: '', isPriceNull: false, partialServices: [] }]);
   };
-
-  const removeVariant = (index: number) => {
-    setVariants((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateVariant = (index: number, field: keyof VariantInput, value: any) => {
+  const removeVariant = (index: number) => setVariants((prev) => prev.filter((_, i) => i !== index));
+  const updateVariant = (index: number, field: keyof VariantInput, value: any) =>
     setVariants((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
-  };
-
-  const addVariantPartialService = (variantIndex: number) => {
+  const addVariantPartialService = (variantIndex: number) =>
     setVariants((prev) => {
       const updated = [...prev];
-      updated[variantIndex].partialServices.push({
-        name: '',
-        price: '',
-        isSpecialOrder: false,
-      });
+      updated[variantIndex].partialServices.push({ name: '', price: '', isSpecialOrder: false });
       return updated;
     });
-  };
-
-  const removeVariantPartialService = (variantIndex: number, vpsIndex: number) => {
+  const removeVariantPartialService = (variantIndex: number, vpsIndex: number) =>
     setVariants((prev) => {
       const updated = [...prev];
-      updated[variantIndex].partialServices = updated[variantIndex].partialServices.filter(
-        (_, i) => i !== vpsIndex
-      );
+      updated[variantIndex].partialServices = updated[variantIndex].partialServices.filter((_, i) => i !== vpsIndex);
       return updated;
     });
-  };
-
-  const updateVariantPartialService = (
-    variantIndex: number,
-    vpsIndex: number,
-    field: keyof VariantPartialServiceInput,
-    value: any
-  ) => {
+  const updateVariantPartialService = (variantIndex: number, vpsIndex: number, field: keyof VariantPartialServiceInput, value: any) =>
     setVariants((prev) => {
       const updated = [...prev];
       updated[variantIndex].partialServices[vpsIndex] = {
@@ -173,115 +167,115 @@ export default function CreateClothPage() {
       };
       return updated;
     });
-  };
 
-  // --- Individual Services Handlers (Step 4) ---
-  const addClothPartialService = () => {
-    setClothPartialServices((prev) => [
-      ...prev,
-      { name: '', price: '', isSpecialOrder: false },
-    ]);
-  };
-
-  const removeClothPartialService = (index: number) => {
-    setClothPartialServices((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateClothPartialService = (
-    index: number,
-    field: keyof ClothPartialServiceInput,
-    value: any
-  ) => {
+  // --- Cloth Partial Service Handlers ---
+  const addClothPartialService = () =>
+    setClothPartialServices((prev) => [...prev, { name: '', price: '', isSpecialOrder: false }]);
+  const removeClothPartialService = (index: number) => setClothPartialServices((prev) => prev.filter((_, i) => i !== index));
+  const updateClothPartialService = (index: number, field: keyof ClothPartialServiceInput, value: any) =>
     setClothPartialServices((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
-  };
 
-  // --- Final Submit Handler ---
+  // --- Final Submit Handler (multipart or JSON) ---
   const handleSubmit = async () => {
     setErrorMessage(null);
     setIsSubmitting(true);
 
     try {
-      let payload: any = {
+      const payload = {
         name: name.trim(),
         description: description.trim() || undefined,
-        imageUrl: imageUrl.trim() || undefined,
+        basePrice: pricingMode === 'standard' ? Number(basePrice) : null,
+        isPriceNull: pricingMode !== 'standard',
+        variants: chosenPath === 'variant' ? variants : [],
+        partialServices: chosenPath === 'partial' ? clothPartialServices : [],
       };
 
+      // Validate complex structures before sending
       if (chosenPath === 'variant') {
-        payload.isPriceNull = true;
-        payload.basePrice = null;
-
-        if (variants.length === 0) {
-          throw new Error('Please add at least one type option.');
-        }
-
-        payload.variants = variants.map((v) => {
+        if (variants.length === 0) throw new Error('Please add at least one type option.');
+        for (const v of variants) {
           if (!v.name.trim()) throw new Error('All type options must have a name.');
-          if (!v.isPriceNull && (v.price === '' || v.price === null)) {
+          if (!v.isPriceNull && (v.price === '' || v.price === null))
             throw new Error(`The type "${v.name}" needs a price unless marked as custom quote.`);
+          for (const vps of v.partialServices) {
+            if (!vps.name.trim()) throw new Error('Each extra service under a type must have a name.');
+            if (!vps.isSpecialOrder && (vps.price === '' || vps.price === null))
+              throw new Error(`Extra service "${vps.name}" under type "${v.name}" requires a price.`);
           }
+        }
+      } else if (chosenPath === 'partial') {
+        if (clothPartialServices.length === 0) throw new Error('Please add at least one individual service.');
+        for (const s of clothPartialServices) {
+          if (!s.name.trim()) throw new Error('Each individual service must have a name.');
+          if (!s.isSpecialOrder && (s.price === '' || s.price === null))
+            throw new Error(`Individual service "${s.name}" needs a price.`);
+        }
+      }
 
-          return {
+      let res: Response;
+
+      if (imageFile) {
+        // ----- Multipart upload -----
+        const formData = new FormData();
+        formData.append('name', payload.name);
+        if (payload.description) formData.append('description', payload.description);
+        formData.append('basePrice', String(payload.basePrice ?? ''));
+        formData.append('isPriceNull', String(payload.isPriceNull));
+        formData.append('variants', JSON.stringify(payload.variants.map(v => ({
+          name: v.name.trim(),
+          price: v.isPriceNull ? null : Number(v.price),
+          isPriceNull: v.isPriceNull,
+          partialServices: v.partialServices.map(vps => ({
+            name: vps.name.trim(),
+            price: vps.isSpecialOrder ? null : Number(vps.price),
+          })),
+        }))));
+        formData.append('partialServices', JSON.stringify(payload.partialServices.map(s => ({
+          name: s.name.trim(),
+          price: s.isSpecialOrder ? null : Number(s.price),
+        }))));
+        formData.append('image', imageFile);
+
+        res = await fetch('/api/cloth', {
+          method: 'POST',
+          body: formData, // no Content-Type header – browser sets it
+        });
+      } else {
+        // ----- JSON fallback (with optional imageUrl) -----
+        const body: any = {
+          name: payload.name,
+          description: payload.description,
+          imageUrl: imageUrl.trim() || undefined,
+          basePrice: payload.basePrice,
+          isPriceNull: payload.isPriceNull,
+          variants: payload.variants.map(v => ({
             name: v.name.trim(),
             price: v.isPriceNull ? null : Number(v.price),
             isPriceNull: v.isPriceNull,
-            partialServices: v.partialServices.map((vps) => {
-              if (!vps.name.trim()) throw new Error('Each extra service under a type must have a name.');
-              if (!vps.isSpecialOrder && (vps.price === '' || vps.price === null)) {
-                throw new Error(`Extra service "${vps.name}" under type "${v.name}" requires a price.`);
-              }
-              return {
-                name: vps.name.trim(),
-                price: vps.isSpecialOrder ? null : Number(vps.price),
-              };
-            }),
-          };
+            partialServices: v.partialServices.map(vps => ({
+              name: vps.name.trim(),
+              price: vps.isSpecialOrder ? null : Number(vps.price),
+            })),
+          })),
+          partialServices: payload.partialServices.map(s => ({
+            name: s.name.trim(),
+            price: s.isSpecialOrder ? null : Number(s.price),
+          })),
+        };
+
+        res = await fetch('/api/cloth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
         });
-      } else {
-        if (pricingMode === 'noservice') {
-          payload.isPriceNull = true;
-          payload.basePrice = null;
-        } else if (pricingMode === 'special') {
-          payload.isPriceNull = false;
-          payload.basePrice = null;
-        } else if (pricingMode === 'standard') {
-          payload.isPriceNull = false;
-          payload.basePrice = Number(basePrice);
-        }
-
-        if (chosenPath === 'partial') {
-          if (clothPartialServices.length === 0) {
-            throw new Error('Please add at least one individual service.');
-          }
-
-          payload.partialServices = clothPartialServices.map((s) => {
-            if (!s.name.trim()) throw new Error('Each individual service must have a name.');
-            if (!s.isSpecialOrder && (s.price === '' || s.price === null)) {
-              throw new Error(`Individual service "${s.name}" needs a price.`);
-            }
-            return {
-              name: s.name.trim(),
-              price: s.isSpecialOrder ? null : Number(s.price),
-            };
-          });
-        }
       }
-
-      const res = await fetch('/api/cloth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Failed to create laundry service.');
-      }
+      if (!res.ok) throw new Error(data.message || 'Failed to create laundry service.');
 
       router.push('/service');
     } catch (err: any) {
@@ -293,8 +287,7 @@ export default function CreateClothPage() {
 
   return (
     <div className="w-full pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto flex-1 flex flex-col justify-center">
-      
-      {/* Title Header */}
+      {/* Title */}
       <div className="text-center mb-10">
         <span className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-gold-polished/10 dark:bg-gold-metallic/10 text-gold-polished dark:text-gold-metallic rounded-full border border-gold-polished/20 mb-3 inline-block">
           Add New Item
@@ -310,7 +303,7 @@ export default function CreateClothPage() {
         </p>
       </div>
 
-      {/* Step Indicator Progress Bar */}
+      {/* Progress Bar */}
       <div className="mb-8 w-full max-w-xl mx-auto flex items-center justify-between relative px-4">
         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-navy-deep/10 dark:bg-white/10 -translate-y-1/2 z-0" />
         {[
@@ -321,7 +314,6 @@ export default function CreateClothPage() {
           const Icon = step.icon;
           const isActive = activeStep === idx || (activeStep === 3 && idx === 2);
           const isDone = activeStep > idx;
-
           return (
             <div key={idx} className="relative z-10 flex flex-col items-center gap-1.5">
               <div
@@ -343,7 +335,7 @@ export default function CreateClothPage() {
         })}
       </div>
 
-      {/* Error Alert Box */}
+      {/* Error Alert */}
       <AnimatePresence>
         {errorMessage && (
           <motion.div
@@ -358,17 +350,10 @@ export default function CreateClothPage() {
         )}
       </AnimatePresence>
 
-      {/* Main Form Box Container */}
+      {/* Form Container */}
       <div className="w-full rounded-3xl border border-navy-deep/10 dark:border-white/10 liquid-glass-light dark:liquid-glass-dark p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-        
-        <Swiper
-          onSwiper={setSwiper}
-          allowTouchMove={false}
-          spaceBetween={40}
-          slidesPerView={1}
-          className="w-full"
-        >
-          {/* ================= STEP 1: ITEM DETAILS ================= */}
+        <Swiper onSwiper={setSwiper} allowTouchMove={false} spaceBetween={40} slidesPerView={1} className="w-full">
+          {/* ====== STEP 1: ITEM DETAILS ====== */}
           <SwiperSlide>
             <div className="flex flex-col gap-6">
               <div className="border-b border-navy-deep/10 dark:border-white/10 pb-4">
@@ -382,7 +367,7 @@ export default function CreateClothPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* Cloth Name */}
+                {/* Name */}
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                     Item Name *
@@ -410,21 +395,79 @@ export default function CreateClothPage() {
                   />
                 </div>
 
-                {/* Image URL */}
-                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                {/* Image Section */}
+                <div className="flex flex-col gap-2 sm:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-                    <ImageIcon className="w-3.5 h-3.5 text-gold-polished" /> Image URL (Optional)
+                    <ImageIcon className="w-3.5 h-3.5 text-gold-polished" /> Item Image (Optional)
                   </label>
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    className="w-full px-4 py-3 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/50 dark:bg-navy-deep/40 text-sm focus:outline-none focus:border-gold-polished transition-all"
-                  />
+                  
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Upload Box */}
+                    <div
+                      className={`relative flex-1 border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        imageFile
+                          ? 'border-green-500 bg-green-50/20'
+                          : 'border-navy-deep/20 dark:border-white/20 hover:border-gold-polished hover:bg-navy-deep/5 dark:hover:bg-white/5'
+                      }`}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {imagePreview ? (
+                        <div className="relative w-full">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full max-h-32 object-contain rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearFile();
+                            }}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/80 text-white hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
+                          <p className="text-xs font-medium text-slate-400">
+                            Drop your image here or <span className="text-gold-polished underline">browse</span>
+                          </p>
+                          <p className="text-[10px] text-slate-400 opacity-70 mt-1">
+                            PNG, JPG, WEBP (max 5MB)
+                          </p>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {/* URL Fallback */}
+                    {!imageFile && (
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <label className="text-[10px] font-semibold text-slate-400 uppercase">
+                          Or paste an image URL
+                        </label>
+                        <input
+                          type="url"
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          placeholder="https://images.unsplash.com/photo-..."
+                          className="w-full px-4 py-2.5 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/50 dark:bg-navy-deep/40 text-xs focus:outline-none focus:border-gold-polished transition-all"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Pricing Mode Selection */}
+                {/* Pricing Mode */}
                 <div className="flex flex-col gap-2 sm:col-span-2 mt-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                     Pricing Type
@@ -521,7 +564,7 @@ export default function CreateClothPage() {
             </div>
           </SwiperSlide>
 
-          {/* ================= STEP 2: PATHWAY / STRUCTURE SELECTION ================= */}
+          {/* ====== STEP 2: PATHWAY SELECTION ====== */}
           <SwiperSlide>
             <div className="flex flex-col gap-6">
               <div className="border-b border-navy-deep/10 dark:border-white/10 pb-4">
@@ -544,6 +587,7 @@ export default function CreateClothPage() {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Submit Now */}
                 <button
                   type="button"
                   onClick={() => setChosenPath('submit')}
@@ -567,6 +611,7 @@ export default function CreateClothPage() {
                   </span>
                 </button>
 
+                {/* Variants */}
                 <button
                   type="button"
                   disabled={hasBasePriceInStep1}
@@ -593,6 +638,7 @@ export default function CreateClothPage() {
                   </span>
                 </button>
 
+                {/* Partial Services */}
                 <button
                   type="button"
                   onClick={() => setChosenPath('partial')}
@@ -642,7 +688,7 @@ export default function CreateClothPage() {
             </div>
           </SwiperSlide>
 
-          {/* ================= STEP 3: TYPES BUILDER ================= */}
+          {/* ====== STEP 3: TYPES BUILDER ====== */}
           <SwiperSlide>
             <div className="flex flex-col gap-6">
               <div className="border-b border-navy-deep/10 dark:border-white/10 pb-4 flex items-center justify-between">
@@ -655,7 +701,6 @@ export default function CreateClothPage() {
                     Add each type with its own pricing, plus optional extra services under that type.
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={addVariant}
@@ -679,7 +724,6 @@ export default function CreateClothPage() {
                         type="button"
                         onClick={() => removeVariant(vIdx)}
                         className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                        aria-label="Remove Type"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -698,7 +742,6 @@ export default function CreateClothPage() {
                           className="w-full px-4 py-2.5 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/60 dark:bg-navy-deep/60 text-xs font-medium focus:outline-none focus:border-purple-400"
                         />
                       </div>
-
                       <div className="flex flex-col gap-1.5">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] font-bold text-slate-400 uppercase">
@@ -719,11 +762,7 @@ export default function CreateClothPage() {
                           disabled={variant.isPriceNull}
                           value={variant.isPriceNull ? '' : variant.price}
                           onChange={(e) =>
-                            updateVariant(
-                              vIdx,
-                              'price',
-                              e.target.value === '' ? '' : Number(e.target.value)
-                            )
+                            updateVariant(vIdx, 'price', e.target.value === '' ? '' : Number(e.target.value))
                           }
                           placeholder={variant.isPriceNull ? 'Price after inspection' : 'e.g. 1500'}
                           className="w-full px-4 py-2.5 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/60 dark:bg-navy-deep/60 text-xs font-medium focus:outline-none focus:border-purple-400 disabled:opacity-50"
@@ -731,6 +770,7 @@ export default function CreateClothPage() {
                       </div>
                     </div>
 
+                    {/* Extra services for this variant */}
                     <div className="mt-2 border-t border-navy-deep/10 dark:border-white/10 pt-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -744,7 +784,6 @@ export default function CreateClothPage() {
                           <Plus className="w-3 h-3" /> Add Service
                         </button>
                       </div>
-
                       <div className="flex flex-col gap-2">
                         {variant.partialServices.map((vps, vpsIdx) => (
                           <div
@@ -754,41 +793,29 @@ export default function CreateClothPage() {
                             <input
                               type="text"
                               value={vps.name}
-                              onChange={(e) =>
-                                updateVariantPartialService(vIdx, vpsIdx, 'name', e.target.value)
-                              }
+                              onChange={(e) => updateVariantPartialService(vIdx, vpsIdx, 'name', e.target.value)}
                               placeholder="Service name (e.g. Ironing only)"
                               className="sm:col-span-6 px-3 py-1.5 rounded-lg border border-navy-deep/10 dark:border-white/10 bg-transparent text-xs focus:outline-none focus:border-purple-400"
                             />
-                            
                             <input
                               type="number"
                               disabled={vps.isSpecialOrder}
                               value={vps.isSpecialOrder ? '' : vps.price}
                               onChange={(e) =>
-                                updateVariantPartialService(
-                                  vIdx,
-                                  vpsIdx,
-                                  'price',
-                                  e.target.value === '' ? '' : Number(e.target.value)
-                                )
+                                updateVariantPartialService(vIdx, vpsIdx, 'price', e.target.value === '' ? '' : Number(e.target.value))
                               }
                               placeholder={vps.isSpecialOrder ? 'Custom Quote' : 'Price'}
                               className="sm:col-span-3 px-3 py-1.5 rounded-lg border border-navy-deep/10 dark:border-white/10 bg-transparent text-xs focus:outline-none focus:border-purple-400 disabled:opacity-50"
                             />
-
                             <label className="sm:col-span-2 flex items-center gap-1 text-[9px] font-semibold text-slate-400 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={vps.isSpecialOrder}
-                                onChange={(e) =>
-                                  updateVariantPartialService(vIdx, vpsIdx, 'isSpecialOrder', e.target.checked)
-                                }
+                                onChange={(e) => updateVariantPartialService(vIdx, vpsIdx, 'isSpecialOrder', e.target.checked)}
                                 className="rounded text-purple-500 text-[10px]"
                               />
                               Quote
                             </label>
-
                             <button
                               type="button"
                               onClick={() => removeVariantPartialService(vIdx, vpsIdx)}
@@ -812,7 +839,6 @@ export default function CreateClothPage() {
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
-
                 <button
                   type="button"
                   disabled={isSubmitting}
@@ -825,7 +851,7 @@ export default function CreateClothPage() {
             </div>
           </SwiperSlide>
 
-          {/* ================= STEP 4: INDIVIDUAL SERVICES BUILDER ================= */}
+          {/* ====== STEP 4: INDIVIDUAL SERVICES BUILDER ====== */}
           <SwiperSlide>
             <div className="flex flex-col gap-6">
               <div className="border-b border-navy-deep/10 dark:border-white/10 pb-4 flex items-center justify-between">
@@ -838,7 +864,6 @@ export default function CreateClothPage() {
                     Add standalone extra services available for this item, like washing only or stain removal.
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={addClothPartialService}
@@ -866,7 +891,6 @@ export default function CreateClothPage() {
                         className="w-full px-3.5 py-2 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/60 dark:bg-navy-deep/60 text-xs focus:outline-none focus:border-blue-400"
                       />
                     </div>
-
                     <div className="sm:col-span-4 flex flex-col gap-1">
                       <label className="text-[10px] font-bold text-slate-400 uppercase">
                         Price (₦) *
@@ -876,37 +900,28 @@ export default function CreateClothPage() {
                         disabled={service.isSpecialOrder}
                         value={service.isSpecialOrder ? '' : service.price}
                         onChange={(e) =>
-                          updateClothPartialService(
-                            sIdx,
-                            'price',
-                            e.target.value === '' ? '' : Number(e.target.value)
-                          )
+                          updateClothPartialService(sIdx, 'price', e.target.value === '' ? '' : Number(e.target.value))
                         }
                         placeholder={service.isSpecialOrder ? 'Custom Quote' : 'e.g. 800'}
                         className="w-full px-3.5 py-2 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/60 dark:bg-navy-deep/60 text-xs focus:outline-none focus:border-blue-400 disabled:opacity-50"
                       />
                     </div>
-
                     <div className="sm:col-span-2 flex items-center gap-1.5 pt-4 sm:pt-0">
                       <label className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={service.isSpecialOrder}
-                          onChange={(e) =>
-                            updateClothPartialService(sIdx, 'isSpecialOrder', e.target.checked)
-                          }
+                          onChange={(e) => updateClothPartialService(sIdx, 'isSpecialOrder', e.target.checked)}
                           className="rounded text-blue-500 focus:ring-blue-400"
                         />
                         Custom Quote
                       </label>
                     </div>
-
                     <div className="sm:col-span-1 flex justify-end pt-4 sm:pt-0">
                       <button
                         type="button"
                         onClick={() => removeClothPartialService(sIdx)}
                         className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                        aria-label="Remove Service"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -923,7 +938,6 @@ export default function CreateClothPage() {
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
-
                 <button
                   type="button"
                   disabled={isSubmitting}

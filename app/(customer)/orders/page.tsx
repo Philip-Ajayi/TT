@@ -4,16 +4,17 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Calendar, 
-  Search, 
-  RefreshCw, 
-  AlertCircle, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  CheckCircle2, 
-  FileText
+import {
+  Calendar,
+  Search,
+  RefreshCw,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 
 interface Order {
@@ -22,6 +23,7 @@ interface Order {
   status: string;
   currency: string;
   netAmount: number | null;
+  paymentDate?: string | null;   // ← added
 }
 
 interface PaginationMeta {
@@ -36,9 +38,14 @@ export default function CustomerOrdersPage() {
 
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  
+
   const [orders, setOrders] = useState<Order[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, pageSize: 20, totalCount: 0, totalPages: 0 });
+  const [meta, setMeta] = useState<PaginationMeta>({
+    page: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 0,
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -120,7 +127,6 @@ export default function CustomerOrdersPage() {
 
   return (
     <div className="w-full pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex-1 flex flex-col">
-      
       {/* Page Title */}
       <div className="text-left mb-12">
         <h1 className="text-4xl font-black uppercase tracking-tight mb-3">
@@ -149,7 +155,7 @@ export default function CustomerOrdersPage() {
                 className="w-full px-4 py-3 rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/40 dark:bg-navy-deep/40 text-xs text-navy-deep dark:text-alabaster focus:outline-none focus:border-gold-polished transition-all"
               />
             </div>
-            
+
             <div className="flex flex-col gap-1.5 w-full">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-gold-polished" /> End Date
@@ -170,7 +176,7 @@ export default function CustomerOrdersPage() {
             >
               <Search className="w-3.5 h-3.5" /> Filter
             </button>
-            
+
             {(startDate || endDate) && (
               <button
                 type="button"
@@ -188,7 +194,7 @@ export default function CustomerOrdersPage() {
       <div className="flex-1 w-full flex flex-col justify-between">
         <AnimatePresence mode="wait">
           {loading ? (
-            <motion.div 
+            <motion.div
               key="loading"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -196,7 +202,9 @@ export default function CustomerOrdersPage() {
               className="py-24 flex items-center justify-center flex-col gap-3"
             >
               <RefreshCw className="w-8 h-8 text-gold-polished dark:text-gold-metallic animate-spin" />
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading your orders...</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Loading your orders...
+              </p>
             </motion.div>
           ) : error ? (
             <motion.div
@@ -210,8 +218,8 @@ export default function CustomerOrdersPage() {
                 <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
                 <h3 className="text-base font-bold mb-1">Could not load orders</h3>
                 <p className="text-xs text-slate-blue dark:text-platinum mb-4 opacity-80">{error}</p>
-                <button 
-                  onClick={() => fetchOrders(currentPage)} 
+                <button
+                  onClick={() => fetchOrders(currentPage)}
                   className="px-5 py-2 rounded-xl bg-gold-polished text-white text-xs font-bold uppercase tracking-wider shadow-md"
                 >
                   Try Again
@@ -229,7 +237,7 @@ export default function CustomerOrdersPage() {
               <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4 opacity-60" />
               <h3 className="text-lg font-bold mb-1 text-navy-deep dark:text-alabaster">No Orders Found</h3>
               <p className="text-xs text-slate-blue dark:text-platinum max-w-sm mx-auto opacity-70">
-                {startDate || endDate 
+                {startDate || endDate
                   ? "No orders match your selected date range."
                   : "You haven't placed any laundry orders yet."}
               </p>
@@ -246,10 +254,18 @@ export default function CustomerOrdersPage() {
                 <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead>
                     <tr className="border-b border-navy-deep/10 dark:border-white/10 bg-navy-deep/[2%] dark:bg-white/[2%]">
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Order ID</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Date Placed</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Total</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        Date Placed
+                      </th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        Status / Payment
+                      </th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">
+                        Total
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -269,11 +285,19 @@ export default function CustomerOrdersPage() {
                           {new Date(order.createdAt).toLocaleDateString(undefined, {
                             year: 'numeric',
                             month: 'short',
-                            day: 'numeric'
+                            day: 'numeric',
                           })}
                         </td>
+                        {/* Stacked Status + Payment */}
                         <td className="px-6 py-4">
-                          {getStatusBadge(order.status)}
+                          <div className="flex flex-col items-start gap-1">
+                            {getStatusBadge(order.status)}
+                            {order.paymentDate && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                                <CreditCard className="w-3 h-3" /> Paid
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-xs font-bold text-right text-navy-deep dark:text-alabaster">
                           {order.currency}{' '}
@@ -299,7 +323,7 @@ export default function CustomerOrdersPage() {
             <div className="flex items-center gap-2">
               <button
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 className="p-2 rounded-xl border border-navy-deep/10 dark:border-white/10 text-slate-blue dark:text-platinum disabled:opacity-40 hover:bg-gold-metallic/5 transition-colors"
                 aria-label="Previous Page"
               >
@@ -307,7 +331,7 @@ export default function CustomerOrdersPage() {
               </button>
               <button
                 disabled={currentPage === meta.totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, meta.totalPages))}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
                 className="p-2 rounded-xl border border-navy-deep/10 dark:border-white/10 text-slate-blue dark:text-platinum disabled:opacity-40 hover:bg-gold-metallic/5 transition-colors"
                 aria-label="Next Page"
               >

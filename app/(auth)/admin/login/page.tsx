@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
       if (res?.error) {
         setError(res.error);
       } else if (res?.ok) {
-        router.push("/admin/address");
+        router.push("/admin");
         router.refresh();
       }
     } catch (err: any) {
@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
     try {
       setGoogleLoading(true);
       setError(null);
-      await signIn("google", { callbackUrl: "/admin/address?role=admin" });
+      await signIn("google", { callbackUrl: "/admin?role=admin" });
     } catch (err) {
       setError("Failed to initiate Google OAuth.");
       setGoogleLoading(false);

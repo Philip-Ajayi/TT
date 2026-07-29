@@ -6,14 +6,14 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
-import { 
-  ArrowLeft, 
-  RefreshCw, 
-  AlertCircle, 
-  Clock, 
-  CheckCircle2, 
-  Package, 
-  MapPin, 
+import {
+  ArrowLeft,
+  RefreshCw,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  Package,
+  MapPin,
   Hash,
   Phone,
   Calendar,
@@ -22,7 +22,9 @@ import {
   Edit,
   ChevronLeft,
   ChevronRight,
-  Play
+  Play,
+  FileText,
+  Ban,
 } from "lucide-react";
 import OrderEditModal from "@/components/admin/edit";
 
@@ -66,6 +68,21 @@ interface OrderDetail {
   paymentDate?: string | null;
   deliveryGroups: DeliveryGroup[];
   customerName?: string | null;
+  invoiceIssued: boolean; // 👈 new field
+}
+
+// Duplicated from the API for client‑side checks
+const ORDER_STATUS_HIERARCHY = ['Received', 'Confirmed', 'Processing', 'Ready'];
+
+function getOrderNextStatus(current: string | null, direction: 'next' | 'prev'): string {
+  if (!current) return ORDER_STATUS_HIERARCHY[0];
+  const idx = ORDER_STATUS_HIERARCHY.indexOf(current);
+  if (idx === -1) return ORDER_STATUS_HIERARCHY[0];
+  if (direction === 'next') {
+    return ORDER_STATUS_HIERARCHY[Math.min(idx + 1, ORDER_STATUS_HIERARCHY.length - 1)];
+  } else {
+    return ORDER_STATUS_HIERARCHY[Math.max(idx - 1, 0)];
+  }
 }
 
 export default function CustomerOrderDetailPage() {
@@ -78,6 +95,7 @@ export default function CustomerOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
+  const [togglingInvoice, setTogglingInvoice] = useState<boolean>(false); // 👈 for button state
 
   const fetchOrderDetails = async () => {
     try {
@@ -89,6 +107,7 @@ export default function CustomerOrderDetailPage() {
         throw new Error("Something went wrong while fetching your order details.");
       }
       const data = await res.json();
+      // Ensure the API returns invoiceIssued – if not, add it in the GET route.
       setOrder(data);
     } catch (err: any) {
       setError(err.message || "An unexpected error happened while loading your order.");
@@ -103,11 +122,45 @@ export default function CustomerOrderDetailPage() {
     }
   }, [orderId]);
 
+  // ---------- Invoice toggle ----------
+  const handleInvoiceToggle = async () => {
+    if (!order) return;
+    const newVal = !order.invoiceIssued;
+    const confirmMsg = newVal
+      ? "Issue an invoice to the customer?"
+      : "Cancel this invoice?";
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setTogglingInvoice(true);
+      const res = await fetch(`/api/orders/${orderId}/invoice-issued`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceIssued: newVal }),
+      });
+      if (!res.ok) throw new Error('Failed to update invoice status');
+      // Optimistically update local state
+      setOrder(prev => prev ? { ...prev, invoiceIssued: newVal } : prev);
+      // Refresh data to be sure
+      await fetchOrderDetails();
+    } catch (e: any) {
+      alert(e.message || 'Invoice toggle failed');
+    } finally {
+      setTogglingInvoice(false);
+    }
+  };
+
+  // ---------- Status change with confirmation ----------
   const handleStatusChange = async (
     targetType: 'order' | 'deliveryGroup' | 'subOrder',
     targetId?: string,
     direction?: 'next' | 'prev'
   ) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to change the status of this ${targetType}?`
+    );
+    if (!confirmed) return;
+
     try {
       setUpdatingStatus(true);
       const res = await fetch(`/api/orders/${orderId}/status`, {
@@ -143,7 +196,7 @@ export default function CustomerOrderDetailPage() {
     if (!status) {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-gray-500/10 text-gray-500 border border-gray-500/20 tracking-wider">
-          Unset
+          Not Started
         </span>
       );
     }
@@ -169,9 +222,24 @@ export default function CustomerOrderDetailPage() {
     );
   };
 
+  // ---------- Order status movement control ----------
+  const canChangeOrderStatus = (direction: 'next' | 'prev'): boolean => {
+    if (!order) return false;
+    const nextStatus = getOrderNextStatus(order.status, direction);
+
+    // If the order is paid, block moving TO "Received" or "Confirmed"
+    // unless the order is already at that exact status.
+    if (order.paymentDate && (nextStatus === 'Received' || nextStatus === 'Confirmed')) {
+      if (order.status !== nextStatus) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   return (
     <div className="w-full pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex-1 flex flex-col">
-      {/* Back Button */}
+      {/* Back Button & Edit (hidden if paid) */}
       <div className="mb-8 flex items-center justify-between">
         <button
           onClick={() => router.back()}
@@ -180,13 +248,17 @@ export default function CustomerOrderDetailPage() {
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-0.5 transition-transform" />
           Back to Orders
         </button>
-        <button
-          onClick={() => setIsEditModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-polished text-white text-xs font-bold uppercase tracking-wider shadow-md hover:bg-gold-metallic transition-colors"
-        >
-          <Edit className="w-4 h-4" />
-          Edit Order
-        </button>
+
+        {/* Edit button hidden when payment date exists */}
+        {!order?.paymentDate && (
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-polished text-white text-xs font-bold uppercase tracking-wider shadow-md hover:bg-gold-metallic transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+            Edit Order
+          </button>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
@@ -242,22 +314,28 @@ export default function CustomerOrderDetailPage() {
                       <CreditCard className="w-3.5 h-3.5" /> Order Paid
                     </span>
                   )}
+                  {/* Show invoice status badge if issued */}
+                  {order.invoiceIssued && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-purple-500/10 text-purple-500 border border-purple-500/20 tracking-wider">
+                      <FileText className="w-3.5 h-3.5" /> Invoice Issued
+                    </span>
+                  )}
                 </div>
-                
+
                 {/* Order Direct Status Controls */}
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-xs font-semibold">Change Order Status:</span>
                   <button
-                    disabled={updatingStatus}
+                    disabled={updatingStatus || !canChangeOrderStatus('prev')}
                     onClick={() => handleStatusChange('order', undefined, 'prev')}
-                    className="p-1 rounded bg-navy-deep/10 dark:bg-white/10 hover:bg-gold-polished hover:text-white transition-colors"
+                    className="p-1 rounded bg-navy-deep/10 dark:bg-white/10 hover:bg-gold-polished hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
-                    disabled={updatingStatus}
+                    disabled={updatingStatus || !canChangeOrderStatus('next')}
                     onClick={() => handleStatusChange('order', undefined, 'next')}
-                    className="p-1 rounded bg-navy-deep/10 dark:bg-white/10 hover:bg-gold-polished hover:text-white transition-colors"
+                    className="p-1 rounded bg-navy-deep/10 dark:bg-white/10 hover:bg-gold-polished hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -275,7 +353,6 @@ export default function CustomerOrderDetailPage() {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              
               {/* Laundry Bags Section */}
               <div className="lg:col-span-8 space-y-6">
                 <div className="flex items-center justify-between">
@@ -313,11 +390,10 @@ export default function CustomerOrderDetailPage() {
 
               {/* Sidebar: Order Info & Payment */}
               <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-28">
-                
                 {/* Order Info Panel */}
                 <div className="liquid-glass-light dark:liquid-glass-dark border border-navy-deep/10 dark:border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Order Information</h3>
-                  
+
                   <div className="space-y-3 text-xs">
                     {order.customerName && (
                       <div className="flex justify-between items-center py-2 border-b border-navy-deep/5 dark:border-white/5">
@@ -351,7 +427,7 @@ export default function CustomerOrderDetailPage() {
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5" /> Payment Summary
                   </h3>
-                  
+
                   <div className="space-y-2.5 text-xs">
                     <div className="flex justify-between items-center opacity-80">
                       <span>Cleaning Service Cost</span>
@@ -371,16 +447,16 @@ export default function CustomerOrderDetailPage() {
                         {order.currency} {formatPrice(order.totalReturnDeliveryFee, false)}
                       </span>
                     </div>
-                    
+
                     {order.discountAmount != null && order.discountAmount > 0 && (
                       <div className="flex justify-between items-center text-green-500 font-medium bg-green-500/5 px-2.5 py-1.5 rounded-lg border border-green-500/10">
                         <span className="flex items-center gap-1"><Tag className="w-3 h-3" /> Discount</span>
                         <span>-{order.currency} {Number(order.discountAmount).toFixed(2)}</span>
                       </div>
                     )}
-                    
+
                     <div className="h-px bg-navy-deep/10 dark:bg-white/10 my-3" />
-                    
+
                     {order.discountAmount != null && order.discountAmount > 0 && order.totalAmount != null ? (
                       <>
                         <div className="flex justify-between items-center">
@@ -406,16 +482,40 @@ export default function CustomerOrderDetailPage() {
                         </span>
                       </div>
                     )}
+
+                    {/* Invoice Toggle – visible only when unpaid but netAmount is defined */}
+                    {!order.paymentDate && order.netAmount != null && (
+                      <div className="pt-2">
+                        <button
+                          onClick={handleInvoiceToggle}
+                          disabled={togglingInvoice}
+                          className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${
+                            order.invoiceIssued
+                              ? 'bg-red-600/10 border border-red-600/30 text-red-600 hover:bg-red-600/20'
+                              : 'bg-blue-600/10 border border-blue-600/30 text-blue-600 hover:bg-blue-600/20'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {order.invoiceIssued ? (
+                            <>
+                              <Ban className="w-3.5 h-3.5" /> Cancel Invoice
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="w-3.5 h-3.5" /> Issue Invoice
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
               </div>
             </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
 
-      {/* Edit Modal */}
+      {/* Edit Modal – only rendered when modal state is true */}
       {isEditModalOpen && (
         <OrderEditModal
           orderId={orderId}
@@ -430,9 +530,9 @@ export default function CustomerOrderDetailPage() {
   );
 }
 
-// Component for each laundry bag (delivery group)
+// ---------- Delivery Group Card (unchanged) ----------
 function renderDeliveryGroupCard(
-  group: DeliveryGroup, 
+  group: DeliveryGroup,
   currency: string,
   onStatusChange: (type: 'deliveryGroup' | 'subOrder', id: string, direction?: 'next' | 'prev') => void,
   disabled: boolean
@@ -458,7 +558,7 @@ function renderDeliveryGroupCard(
         {/* Group Direct Status Updater */}
         <div className="flex flex-col items-start sm:items-end gap-1">
           <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-navy-deep/5 dark:bg-white/5">
-            Status: {group.status || "Unset"}
+            Status: {group.status || "Not Started"}
           </span>
           <div className="flex items-center gap-1.5 mt-1">
             {!group.status ? (
@@ -496,7 +596,7 @@ function renderDeliveryGroupCard(
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
           <Hash className="w-3 h-3" /> Items in this bag
         </p>
-        
+
         <div className="rounded-2xl border border-navy-deep/5 dark:border-white/5 overflow-hidden">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -512,11 +612,13 @@ function renderDeliveryGroupCard(
                 <tr key={so.id} className="border-b border-navy-deep/5 dark:border-white/5 last:border-0 hover:bg-navy-deep/[1%] dark:hover:bg-white/[1%]">
                   <td className="px-4 py-3 font-semibold text-navy-deep dark:text-alabaster">{so.name}</td>
                   <td className="px-4 py-3 text-center font-medium opacity-80">{so.quantity}</td>
-                  
+
                   {/* SubOrder Status Controls */}
                   <td className="px-4 py-3 text-center">
                     <div className="inline-flex items-center gap-1">
-                      <span className="text-[10px] font-mono mr-1">{so.status || "Unset"}</span>
+                      <span className="text-[10px] font-mono mr-1">
+                        {so.status || "Not Started"}
+                      </span>
                       {!so.status ? (
                         <button
                           disabled={disabled}
@@ -558,7 +660,6 @@ function renderDeliveryGroupCard(
 
       {/* Pickup & Return Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-navy-deep/5 dark:border-white/5">
-        
         {/* Pickup */}
         <div className="p-3.5 rounded-2xl bg-navy-deep/[1.5%] dark:bg-white/[1.5%] space-y-2">
           <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -590,7 +691,6 @@ function renderDeliveryGroupCard(
             Fee: {currency} {Number(group.returndeliveryfee).toFixed(2)}
           </div>
         </div>
-
       </div>
     </div>
   );

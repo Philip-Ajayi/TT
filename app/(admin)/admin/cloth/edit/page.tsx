@@ -1,7 +1,7 @@
 //app/(admin)/cloth/edit/page.tsx
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation } from 'swiper/modules';
@@ -20,6 +20,9 @@ import {
   Ban,
   ChevronRight,
   ChevronDown,
+  Upload,
+  Camera,
+  Loader2,
 } from 'lucide-react';
 
 import 'swiper/css';
@@ -63,26 +66,23 @@ export default function ClothEditPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Active Cloth Carousel Selection
   const [selectedClothId, setSelectedClothId] = useState<string | null>(null);
 
   // Modals state
   const [addClothSubModalOpen, setAddClothSubModalOpen] = useState(false);
-  const [addVariantServiceModalOpen, setAddVariantServiceModalOpen] = useState<string | null>(null); // Variant ID
+  const [addVariantServiceModalOpen, setAddVariantServiceModalOpen] = useState<string | null>(null);
   const [editClothModalOpen, setEditClothModalOpen] = useState(false);
 
-  // Inline editing state: { type: 'v'|'cps'|'vps', id: string }
+  // Inline editing state
   const [editingItem, setEditingItem] = useState<{
     type: 'v' | 'cps' | 'vps';
     id: string;
     name: string;
-    price: string; // numeric string, or 'SPECIAL', or 'PRICENULL' (for variants)
+    price: string;
   } | null>(null);
 
-  // Form States for Modals
-  // 1. Add Cloth Sub-Item Form
+  // Add Cloth Sub-Item form
   const [clothSubCategory, setClothSubCategory] = useState<'variant' | 'cps'>('cps');
-  // Dynamic fields array for Variant creation
   const [variantsToAdd, setVariantsToAdd] = useState<
     Array<{
       name: string;
@@ -90,26 +90,30 @@ export default function ClothEditPage() {
       services: Array<{ name: string; price: string }>;
     }>
   >([{ name: '', price: '', services: [] }]);
-  // Dynamic fields array for Cloth Partial Service creation
   const [cpsToAdd, setCpsToAdd] = useState<Array<{ name: string; price: string }>>([
     { name: '', price: '' },
   ]);
 
-  // 2. Add Variant Partial Service Form
+  // Add Variant Partial Service form
   const [vpsToAdd, setVpsToAdd] = useState<{ name: string; price: string }>({
     name: '',
     price: '',
   });
 
-  // 3. Edit Cloth Form
+  // Edit Cloth form (no more imageUrl string)
   const [editClothForm, setEditClothForm] = useState({
     name: '',
-    imageUrl: '',
     description: '',
     price: '',
     isPriceNull: false,
     isSpecialOrder: false,
   });
+
+  // Image file upload state
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch Cloth Data
   const fetchClothData = async () => {
@@ -139,17 +143,20 @@ export default function ClothEditPage() {
     [cloths, selectedClothId]
   );
 
-  // Pre-fill Edit Cloth Modal when opened
+  // Pre-fill Edit Cloth Modal and reset file state when opened
   useEffect(() => {
     if (activeCloth && editClothModalOpen) {
       setEditClothForm({
         name: activeCloth.name || '',
-        imageUrl: activeCloth.imageUrl || '',
         description: activeCloth.description || '',
         price: activeCloth.price !== null ? String(activeCloth.price) : '',
         isPriceNull: activeCloth.isPriceNull,
         isSpecialOrder: !activeCloth.isPriceNull && activeCloth.price === null,
       });
+      // Reset image file state
+      setEditImageFile(null);
+      setEditImagePreview(null);
+      if (editFileInputRef.current) editFileInputRef.current.value = '';
     }
   }, [editClothModalOpen, activeCloth]);
 
@@ -263,7 +270,6 @@ export default function ClothEditPage() {
       }
 
       setAddClothSubModalOpen(false);
-      // Reset forms
       setCpsToAdd([{ name: '', price: '' }]);
       setVariantsToAdd([{ name: '', price: '', services: [] }]);
       await fetchClothData();
@@ -303,42 +309,87 @@ export default function ClothEditPage() {
     }
   };
 
+  // Image file handling
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setEditImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearImageFile = () => {
+    setEditImageFile(null);
+    setEditImagePreview(null);
+    if (editFileInputRef.current) editFileInputRef.current.value = '';
+  };
+
   // Handler for Editing Parent Cloth (#6)
   const handleSaveClothEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCloth) return;
+    setIsUploadingImage(true);
 
     try {
-      const body: any = {
-        type: 'c',
-        name: editClothForm.name,
-        image: editClothForm.imageUrl,
-        description: editClothForm.description,
-      };
+      // If a new image file is selected, use multipart
+      if (editImageFile) {
+        const formData = new FormData();
+        formData.append('type', 'c');
+        formData.append('name', editClothForm.name);
+        if (editClothForm.description) formData.append('description', editClothForm.description);
 
-      if (editClothForm.isPriceNull) {
-        body.toggletopricenull = true;
-      } else if (editClothForm.isSpecialOrder) {
-        body.toggletospecial = true;
-      } else if (editClothForm.price !== '') {
-        body.price = parseFloat(editClothForm.price);
-      }
+        // Pricing fields
+        if (editClothForm.isPriceNull) {
+          formData.append('toggletopricenull', 'true');
+        } else if (editClothForm.isSpecialOrder) {
+          formData.append('toggletospecial', 'true');
+        } else if (editClothForm.price !== '') {
+          formData.append('price', editClothForm.price);
+        }
 
-      const res = await fetch(`/api/stack/cloth/${activeCloth.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+        formData.append('image', editImageFile);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Cloth update failed');
+        const res = await fetch(`/api/stack/cloth/${activeCloth.id}`, {
+          method: 'PUT',
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Cloth update failed');
+      } else {
+        // No new image – JSON request (omit image field to preserve existing)
+        const body: any = {
+          type: 'c',
+          name: editClothForm.name,
+          description: editClothForm.description || undefined,
+        };
+
+        if (editClothForm.isPriceNull) {
+          body.toggletopricenull = true;
+        } else if (editClothForm.isSpecialOrder) {
+          body.toggletospecial = true;
+        } else if (editClothForm.price !== '') {
+          body.price = parseFloat(editClothForm.price);
+        }
+
+        const res = await fetch(`/api/stack/cloth/${activeCloth.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Cloth update failed');
       }
 
       setEditClothModalOpen(false);
       await fetchClothData();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -476,7 +527,6 @@ export default function ClothEditPage() {
               </div>
             </div>
 
-            {/* Level 1 Controls */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setAddClothSubModalOpen(true)}
@@ -617,7 +667,6 @@ export default function ClothEditPage() {
                     key={variant.id}
                     className="p-4 rounded-2xl border border-navy-deep/10 dark:border-white/10 bg-white/30 dark:bg-navy-deep/30 space-y-4"
                   >
-                    {/* Level 2: Type Header */}
                     <div className="flex items-center justify-between gap-3">
                       {editingItem?.id === variant.id ? (
                         <div className="flex items-center gap-2 w-full flex-wrap">
@@ -717,7 +766,7 @@ export default function ClothEditPage() {
                       )}
                     </div>
 
-                    {/* LEVEL 3: TYPE SERVICES BRANCH (formerly Variant Partial Services) */}
+                    {/* LEVEL 3: TYPE SERVICES BRANCH */}
                     {variant.variantPartialServices.length > 0 && (
                       <div className="pl-4 border-l-2 border-navy-deep/10 dark:border-white/10 space-y-2">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -848,7 +897,6 @@ export default function ClothEditPage() {
               </div>
 
               <form onSubmit={handleAddClothSubItems} className="space-y-6">
-                {/* Rule #5a Toggle Category */}
                 <div className="flex rounded-xl p-1 bg-navy-deep/5 dark:bg-white/5 border border-navy-deep/10 dark:border-white/10">
                   <button
                     type="button"
@@ -888,7 +936,6 @@ export default function ClothEditPage() {
                   </button>
                 </div>
 
-                {/* Sub-form for Individual Services */}
                 {clothSubCategory === 'cps' && (
                   <div className="space-y-4">
                     <p className="text-xs font-semibold text-slate-blue dark:text-platinum">
@@ -942,7 +989,6 @@ export default function ClothEditPage() {
                   </div>
                 )}
 
-                {/* Sub-form for Types (Variants) (#5b) */}
                 {clothSubCategory === 'variant' && (
                   <div className="space-y-6">
                     {variantsToAdd.map((v, vIndex) => (
@@ -994,7 +1040,6 @@ export default function ClothEditPage() {
                           />
                         </div>
 
-                        {/* Nested Type Services */}
                         <div className="pl-3 border-l-2 border-gold-polished/30 space-y-2">
                           <p className="text-[10px] font-bold uppercase text-slate-400">
                             Nested Services for this Type
@@ -1147,7 +1192,7 @@ export default function ClothEditPage() {
         )}
       </AnimatePresence>
 
-      {/* MODAL 3: EDIT PARENT CLOTH (#6) */}
+      {/* MODAL 3: EDIT PARENT CLOTH (#6) – NOW WITH IMAGE FILE UPLOAD */}
       <AnimatePresence>
         {editClothModalOpen && activeCloth && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/60 backdrop-blur-md">
@@ -1187,20 +1232,6 @@ export default function ClothEditPage() {
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase">
-                    Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={editClothForm.imageUrl}
-                    onChange={(e) =>
-                      setEditClothForm({ ...editClothForm, imageUrl: e.target.value })
-                    }
-                    className="px-3 py-2.5 text-xs rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/40 dark:bg-navy-deep/40 focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">
                     Description
                   </label>
                   <textarea
@@ -1214,6 +1245,88 @@ export default function ClothEditPage() {
                     }
                     className="px-3 py-2 text-xs rounded-xl border border-navy-deep/10 dark:border-white/10 bg-white/40 dark:bg-navy-deep/40 focus:outline-none"
                   />
+                </div>
+
+                {/* IMAGE FILE UPLOAD SECTION */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">
+                    Item Image
+                  </label>
+
+                  <div className="flex flex-col gap-3">
+                    {/* Preview / Upload area */}
+                    <div
+                      className={`relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        editImageFile
+                          ? 'border-green-500 bg-green-50/20'
+                          : 'border-navy-deep/20 dark:border-white/20 hover:border-gold-polished hover:bg-navy-deep/5 dark:hover:bg-white/5'
+                      }`}
+                      onClick={() => editFileInputRef.current?.click()}
+                    >
+                      {editImagePreview ? (
+                        <div className="relative w-full">
+                          <img
+                            src={editImagePreview}
+                            alt="Preview"
+                            className="w-full max-h-32 object-contain rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearImageFile();
+                            }}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/80 text-white hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : activeCloth.imageUrl ? (
+                        <div className="relative w-full">
+                          <img
+                            src={activeCloth.imageUrl}
+                            alt="Current cloth"
+                            className="w-full max-h-32 object-contain rounded-lg"
+                          />
+                          <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                            <Upload className="w-6 h-6 text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                          <p className="text-xs font-medium text-slate-400">
+                            Drop new image or click to browse
+                          </p>
+                          <p className="text-[10px] text-slate-400 opacity-70">
+                            PNG, JPG, WEBP (max 5MB)
+                          </p>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        ref={editFileInputRef}
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {editImageFile && (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={clearImageFile}
+                          className="px-3 py-1.5 rounded-lg border border-red-500/30 text-red-500 text-xs font-bold"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1">
+                    Leave empty to keep the current image. Upload a new one to replace it.
+                  </p>
                 </div>
 
                 {/* Base Price Controls (Conditional on types) */}
@@ -1293,8 +1406,10 @@ export default function ClothEditPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-gold-polished dark:bg-gold-metallic text-white dark:text-canvas-dark text-xs font-bold uppercase shadow-md"
+                    disabled={isUploadingImage}
+                    className="px-5 py-2 rounded-xl bg-gold-polished dark:bg-gold-metallic text-white dark:text-canvas-dark text-xs font-bold uppercase shadow-md flex items-center gap-2"
                   >
+                    {isUploadingImage && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     Save Changes
                   </button>
                 </div>

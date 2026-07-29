@@ -67,7 +67,7 @@ export default function CustomerLoginPage() {
       if (res?.error) {
         setError(res.error);
       } else if (res?.ok) {
-        router.push("/");
+        router.push("/service");
         router.refresh();
       }
     } catch (err: any) {
@@ -81,7 +81,7 @@ export default function CustomerLoginPage() {
     try {
       setGoogleLoading(true);
       setError(null);
-      await signIn("google", { callbackUrl: "/" });
+      await signIn("google", { callbackUrl: "/service" });
     } catch (err) {
       setError("Failed to initiate Google authentication.");
       setGoogleLoading(false);

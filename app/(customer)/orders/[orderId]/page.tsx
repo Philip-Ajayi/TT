@@ -1,4 +1,4 @@
-//app/(customer)/orders/[orderId]/page.tsx
+// app/(customer)/orders/[orderId]/page.tsx
 'use client';
 
 import React, { useEffect, useState } from "react";
@@ -6,19 +6,19 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
-import { 
-  ArrowLeft, 
-  RefreshCw, 
-  AlertCircle, 
-  Clock, 
-  CheckCircle2, 
-  Package, 
-  MapPin, 
+import {
+  ArrowLeft,
+  RefreshCw,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  Package,
+  MapPin,
   Hash,
   Phone,
   Calendar,
   CreditCard,
-  Tag
+  Tag,
 } from "lucide-react";
 
 import "swiper/css";
@@ -38,7 +38,7 @@ interface DeliveryGroup {
   returndeliveryfee: number;
   pickdeliverycode: string | null;
   returndeliverycode: string | null;
-  status: string;
+  status: string | null;
   pickAddress: string | null;
   returnAddress: string | null;
   subOrders: SubOrder[];
@@ -47,7 +47,7 @@ interface DeliveryGroup {
 interface OrderDetail {
   id: string;
   createdAt: string;
-  status: string;
+  status: string | null;
   currency: string;
   phoneNumber: string | null;
   totalServiceAmount: number | null;
@@ -56,8 +56,10 @@ interface OrderDetail {
   totalAmount: number | null;
   discountAmount: number | null;
   netAmount: number | null;
+  paymentDate?: string | null;
   deliveryGroups: DeliveryGroup[];
   customerName?: string | null;
+  invoiceIssued: boolean; // 👈 new field
 }
 
 export default function CustomerOrderDetailPage() {
@@ -68,6 +70,7 @@ export default function CustomerOrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false); // 👈 for pay button state
 
   const fetchOrderDetails = async () => {
     try {
@@ -75,7 +78,8 @@ export default function CustomerOrderDetailPage() {
       setError(null);
       const res = await fetch(`/api/orders/${orderId}`);
       if (!res.ok) {
-        if (res.status === 404) throw new Error("We couldn't find this order. It may have been removed.");
+        if (res.status === 404)
+          throw new Error("We couldn't find this order. It may have been removed.");
         throw new Error("Something went wrong while fetching your order details.");
       }
       const data = await res.json();
@@ -93,6 +97,15 @@ export default function CustomerOrderDetailPage() {
     }
   }, [orderId]);
 
+  // ---------- Placeholder payment handler ----------
+  const handlePayNow = async () => {
+    if (!order) return;
+    setPaying(true);
+    // TODO: integrate actual payment gateway
+    window.alert("Payment integration coming soon.");
+    setPaying(false);
+  };
+
   const formatPrice = (value: number | null, showPending = false) => {
     if (value === null || value === undefined) {
       return showPending ? 'Pending' : '0.00';
@@ -100,22 +113,32 @@ export default function CustomerOrderDetailPage() {
     return Number(value).toFixed(2);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
+    if (!status) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-gray-500/10 text-gray-500 border border-gray-500/20 tracking-wider">
+          Unset
+        </span>
+      );
+    }
     const s = status.toLowerCase();
-    if (s === 'completed' || s === 'delivered') {
+
+    if (s === 'completed' || s === 'delivered' || s === 'ready') {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-green-500/10 text-green-500 border border-green-500/20 tracking-wider">
           <CheckCircle2 className="w-3.5 h-3.5" /> {status}
         </span>
       );
     }
-    if (s === 'pending' || s === 'processing') {
+
+    if (s === 'received' || s === 'confirmed' || s === 'processing' || s === 'pending') {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 tracking-wider">
           <Clock className="w-3.5 h-3.5 animate-pulse" /> {status}
         </span>
       );
     }
+
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-navy-deep/10 dark:bg-white/10 text-slate-blue dark:text-platinum tracking-wider">
         {status}
@@ -146,7 +169,9 @@ export default function CustomerOrderDetailPage() {
             className="py-32 flex-1 flex items-center justify-center flex-col gap-3"
           >
             <RefreshCw className="w-8 h-8 text-gold-polished dark:text-gold-metallic animate-spin" />
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading your order...</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Loading your order...
+            </p>
           </motion.div>
         ) : error ? (
           <motion.div
@@ -184,6 +209,11 @@ export default function CustomerOrderDetailPage() {
                     #{order.id.toUpperCase()}
                   </span>
                   {getStatusBadge(order.status)}
+                  {order.paymentDate && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-blue-500/10 text-blue-500 border border-blue-500/20 tracking-wider">
+                      <CreditCard className="w-3.5 h-3.5" /> Order Paid
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-3xl font-black uppercase tracking-tight">
                   Order{" "}
@@ -194,7 +224,9 @@ export default function CustomerOrderDetailPage() {
               </div>
 
               <div className="text-left md:text-right">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Net Total</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                  Net Total
+                </p>
                 <p className="text-2xl font-black text-navy-deep dark:text-alabaster">
                   {order.currency}{' '}
                   {order.netAmount != null ? Number(order.netAmount).toFixed(2) : 'Pending'}
@@ -204,7 +236,6 @@ export default function CustomerOrderDetailPage() {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              
               {/* Laundry Bags Section */}
               <div className="lg:col-span-8 space-y-6">
                 <div className="flex items-center justify-between">
@@ -242,33 +273,40 @@ export default function CustomerOrderDetailPage() {
 
               {/* Sidebar: Order Info & Payment */}
               <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-28">
-                
                 {/* Order Info Panel */}
                 <div className="liquid-glass-light dark:liquid-glass-dark border border-navy-deep/10 dark:border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Order Information</h3>
-                  
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
+                    Order Information
+                  </h3>
+
                   <div className="space-y-3 text-xs">
                     {order.customerName && (
                       <div className="flex justify-between items-center py-2 border-b border-navy-deep/5 dark:border-white/5">
                         <span className="font-semibold opacity-70">Customer Name</span>
-                        <span className="font-bold text-navy-deep dark:text-alabaster">{order.customerName}</span>
+                        <span className="font-bold text-navy-deep dark:text-alabaster">
+                          {order.customerName}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between items-center py-2 border-b border-navy-deep/5 dark:border-white/5">
-                      <span className="font-semibold opacity-70 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Order Date</span>
+                      <span className="font-semibold opacity-70 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" /> Order Date
+                      </span>
                       <span className="font-medium">
                         {new Date(order.createdAt).toLocaleDateString(undefined, {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </span>
                     </div>
                     {order.phoneNumber && (
                       <div className="flex justify-between items-center py-2 border-b border-navy-deep/5 dark:border-white/5">
-                        <span className="font-semibold opacity-70 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> Phone</span>
+                        <span className="font-semibold opacity-70 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5" /> Phone
+                        </span>
                         <span className="font-mono tracking-wider">{order.phoneNumber}</span>
                       </div>
                     )}
@@ -280,7 +318,7 @@ export default function CustomerOrderDetailPage() {
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5" /> Payment Summary
                   </h3>
-                  
+
                   <div className="space-y-2.5 text-xs">
                     <div className="flex justify-between items-center opacity-80">
                       <span>Cleaning Service Cost</span>
@@ -300,17 +338,23 @@ export default function CustomerOrderDetailPage() {
                         {order.currency} {formatPrice(order.totalReturnDeliveryFee, false)}
                       </span>
                     </div>
-                    
+
                     {order.discountAmount != null && order.discountAmount > 0 && (
                       <div className="flex justify-between items-center text-green-500 font-medium bg-green-500/5 px-2.5 py-1.5 rounded-lg border border-green-500/10">
-                        <span className="flex items-center gap-1"><Tag className="w-3 h-3" /> Discount</span>
-                        <span>-{order.currency} {Number(order.discountAmount).toFixed(2)}</span>
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" /> Discount
+                        </span>
+                        <span>
+                          -{order.currency} {Number(order.discountAmount).toFixed(2)}
+                        </span>
                       </div>
                     )}
-                    
+
                     <div className="h-px bg-navy-deep/10 dark:bg-white/10 my-3" />
-                    
-                    {order.discountAmount != null && order.discountAmount > 0 && order.totalAmount != null ? (
+
+                    {order.discountAmount != null &&
+                    order.discountAmount > 0 &&
+                    order.totalAmount != null ? (
                       <>
                         <div className="flex justify-between items-center">
                           <span className="text-xs opacity-60">Subtotal</span>
@@ -319,25 +363,48 @@ export default function CustomerOrderDetailPage() {
                           </span>
                         </div>
                         <div className="flex justify-between items-baseline pt-1">
-                          <span className="text-sm font-bold uppercase text-navy-deep dark:text-alabaster">Total You Pay</span>
+                          <span className="text-sm font-bold uppercase text-navy-deep dark:text-alabaster">
+                            Total You Pay
+                          </span>
                           <span className="text-xl font-black text-gold-polished dark:text-gold-metallic">
                             {order.currency}{' '}
-                            {order.netAmount != null ? Number(order.netAmount).toFixed(2) : 'Pending'}
+                            {order.netAmount != null
+                              ? Number(order.netAmount).toFixed(2)
+                              : 'Pending'}
                           </span>
                         </div>
                       </>
                     ) : (
                       <div className="flex justify-between items-baseline pt-1">
-                        <span className="text-sm font-bold uppercase text-navy-deep dark:text-alabaster">Total</span>
+                        <span className="text-sm font-bold uppercase text-navy-deep dark:text-alabaster">
+                          Total
+                        </span>
                         <span className="text-xl font-black text-gold-polished dark:text-gold-metallic">
                           {order.currency}{' '}
-                          {order.netAmount != null ? Number(order.netAmount).toFixed(2) : 'Pending'}
+                          {order.netAmount != null
+                            ? Number(order.netAmount).toFixed(2)
+                            : 'Pending'}
                         </span>
                       </div>
                     )}
+
+                    {/* ---------- Pay Now Button ---------- */}
+                    {!order.paymentDate &&
+                      order.invoiceIssued &&
+                      order.netAmount != null && (
+                        <div className="pt-3">
+                          <button
+                            onClick={handlePayNow}
+                            disabled={paying}
+                            className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-green-600 text-white text-sm font-bold uppercase tracking-wider shadow-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            {paying ? "Processing..." : "Pay Now"}
+                          </button>
+                        </div>
+                      )}
                   </div>
                 </div>
-
               </div>
             </div>
           </motion.div>
@@ -347,7 +414,7 @@ export default function CustomerOrderDetailPage() {
   );
 }
 
-// Component for each laundry bag (delivery group)
+// ---------- Delivery Group Card (read‑only, unchanged) ----------
 function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
   return (
     <div className="liquid-glass-light dark:liquid-glass-dark border border-navy-deep/10 dark:border-white/10 rounded-3xl p-5 sm:p-6 shadow-lg space-y-6 select-none">
@@ -368,7 +435,7 @@ function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
         </div>
         <div className="text-left sm:text-right">
           <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-navy-deep/5 dark:bg-white/5">
-            Status: {group.status}
+            Status: {group.status || "Unset"}
           </span>
         </div>
       </div>
@@ -378,7 +445,7 @@ function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
           <Hash className="w-3 h-3" /> Items in this bag
         </p>
-        
+
         <div className="rounded-2xl border border-navy-deep/5 dark:border-white/5 overflow-hidden">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -390,11 +457,20 @@ function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
             </thead>
             <tbody>
               {group.subOrders.map((so, idx) => (
-                <tr key={idx} className="border-b border-navy-deep/5 dark:border-white/5 last:border-0 hover:bg-navy-deep/[1%] dark:hover:bg-white/[1%]">
-                  <td className="px-4 py-3 font-semibold text-navy-deep dark:text-alabaster">{so.name}</td>
-                  <td className="px-4 py-3 text-center font-medium opacity-80">{so.quantity}</td>
+                <tr
+                  key={idx}
+                  className="border-b border-navy-deep/5 dark:border-white/5 last:border-0 hover:bg-navy-deep/[1%] dark:hover:bg-white/[1%]"
+                >
+                  <td className="px-4 py-3 font-semibold text-navy-deep dark:text-alabaster">
+                    {so.name}
+                  </td>
+                  <td className="px-4 py-3 text-center font-medium opacity-80">
+                    {so.quantity}
+                  </td>
                   <td className="px-4 py-3 text-right font-mono text-slate-blue dark:text-platinum">
-                    {so.finalPrice != null ? `${currency} ${Number(so.finalPrice).toFixed(2)}` : 'Pending'}
+                    {so.finalPrice != null
+                      ? `${currency} ${Number(so.finalPrice).toFixed(2)}`
+                      : 'Pending'}
                   </td>
                 </tr>
               ))}
@@ -405,7 +481,6 @@ function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
 
       {/* Pickup & Return Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-navy-deep/5 dark:border-white/5">
-        
         {/* Pickup */}
         <div className="p-3.5 rounded-2xl bg-navy-deep/[1.5%] dark:bg-white/[1.5%] space-y-2">
           <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -415,7 +490,9 @@ function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
             {group.pickAddress || "Store drop off"}
           </p>
           {group.pickdeliverycode && (
-            <p className="text-[10px] font-mono opacity-60">Tracking: {group.pickdeliverycode}</p>
+            <p className="text-[10px] font-mono opacity-60">
+              Tracking: {group.pickdeliverycode}
+            </p>
           )}
           <div className="text-[10px] font-semibold opacity-70">
             Fee: {currency} {Number(group.pickdeliveryfee).toFixed(2)}
@@ -431,13 +508,14 @@ function renderDeliveryGroupCard(group: DeliveryGroup, currency: string) {
             {group.returnAddress || "Store pickup"}
           </p>
           {group.returndeliverycode && (
-            <p className="text-[10px] font-mono opacity-60">Tracking: {group.returndeliverycode}</p>
+            <p className="text-[10px] font-mono opacity-60">
+              Tracking: {group.returndeliverycode}
+            </p>
           )}
           <div className="text-[10px] font-semibold opacity-70">
             Fee: {currency} {Number(group.returndeliveryfee).toFixed(2)}
           </div>
         </div>
-
       </div>
     </div>
   );
