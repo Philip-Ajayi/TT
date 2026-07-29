@@ -1,10 +1,10 @@
-//app/unauthorized/page.tsx 
+//app/unauthorized/page.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { ArrowRight, Home, Shield, UserX } from "lucide-react";
+import { ArrowRight, Home, UserX } from "lucide-react";
 
 import gsap from "gsap";
 
@@ -100,13 +100,6 @@ export default function Unauthorized() {
             >
               <Home className="h-4 w-4" />
               Go Home
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-xl border border-navy-deep/20 dark:border-white/10 px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-slate-blue dark:text-platinum transition-colors hover:border-gold-polished/40 dark:hover:border-gold-metallic/40"
-            >
-              <Shield className="h-4 w-4" />
-              Sign In
             </Link>
           </div>
 
