@@ -2521,6 +2521,7 @@ export const OrderScalarFieldEnum = {
   discountAmount: 'discountAmount',
   discountRuleId: 'discountRuleId',
   discountRuleCode: 'discountRuleCode',
+  invoiceIssued: 'invoiceIssued',
   paymentDate: 'paymentDate',
   status: 'status',
   createdAt: 'createdAt',

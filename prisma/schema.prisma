@@ -193,6 +193,7 @@ model Order {
   discountAmount        Decimal?        @db.Decimal(12, 2)
   discountRuleId        String?
   discountRuleCode      String?
+  invoiceIssued         Boolean         @default(false)   // 👈 new field
   paymentDate           DateTime?       // optional date of payment
   status                String          @default("Order received")
   createdAt             DateTime        @default(now())

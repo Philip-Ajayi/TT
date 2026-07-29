@@ -1,78 +1,85 @@
 // middleware.ts
 import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authConfig } from '@/lib/auth.config'; 
+import { authConfig } from '@/lib/auth.config';
 
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isAuthenticated = !!req.auth;
-  const userRole = (req.auth?.user as any)?.role;
-  const isAdminApproved = (req.auth?.user as any)?.adminApproved;
+  const userRole = (req.auth?.user as any)?.role; // 'customer' | 'admin' | 'superadmin'
 
   const currentPath = nextUrl.pathname;
 
-  // 1. EXACT ROUTE PATTERN MATCHING BASED ON YOUR LIST
-  const isSuperAdminRoute = 
-    currentPath.startsWith('/address') || 
-    currentPath.startsWith('/admin-list');
+  // --- ROUTE CATEGORIES ---
 
-  const isAdminRoute = 
-    currentPath.startsWith('/all-order') || 
-    currentPath.startsWith('/cloths/') || 
-    currentPath.startsWith('/currency') || 
-    currentPath.startsWith('/delivery') || 
-    currentPath.startsWith('/discount') || 
-    currentPath.startsWith('/notification') || 
-    currentPath.startsWith('/processing');
+  // Admin routes accessible to both admin & superadmin
+  const isAdminBothRoute =
+    currentPath === '/admin' ||
+    currentPath.startsWith('/admin/profile') ||
+    currentPath.startsWith('/admin/orders');
 
-  const isCustomerProtectedRoute = 
-    currentPath.startsWith('/order') || 
-    currentPath.startsWith('/profile') || 
-    currentPath.startsWith('/service');
+  // All other /admin/* routes → superadmin only
+  const isSuperAdminOnlyRoute =
+    currentPath.startsWith('/admin') && !isAdminBothRoute;
 
-  // Combine all protected routes for generic authentication checks
-  const isProtectedRoute = isSuperAdminRoute || isAdminRoute || isCustomerProtectedRoute;
+  // Customer-facing routes (any authenticated user)
+  const isCustomerProtectedRoute =
+    currentPath.startsWith('/orders') ||
+    currentPath.startsWith('/service') ||
+    currentPath.startsWith('/profile');
 
-  // 2. REDIRECTION LOGIC
-
-  // Unauthenticated users trying to access protected content
+  // --- AUTHENTICATION CHECK ---
   if (!isAuthenticated) {
-    if (isProtectedRoute) {
-      // Direct admins/superadmins to a dedicated admin login, and customers to general login
-      if (isAdminRoute || isSuperAdminRoute) {
-        return NextResponse.redirect(new URL('/admin/login', nextUrl));
-      }
-      return NextResponse.redirect(new URL('/login', nextUrl));
+    // Any protected route (admin or customer) → redirect to login
+    if (isAdminBothRoute || isSuperAdminOnlyRoute || isCustomerProtectedRoute) {
+      // Use a single sign‑in page (NextAuth default)
+      return NextResponse.redirect(new URL('/auth/signin', nextUrl));
+      // If you still have a separate /login page, change to:
+      // return NextResponse.redirect(new URL('/login', nextUrl));
     }
-    return NextResponse.next();
+    return NextResponse.next(); // public routes
   }
 
-  // Superadmin Guard
-  if (isSuperAdminRoute) {
+  // --- AUTHORIZATION CHECKS ---
+
+  // 1. Superadmin‑only routes
+  if (isSuperAdminOnlyRoute) {
     if (userRole !== 'superadmin') {
       return NextResponse.redirect(new URL('/unauthorized', nextUrl));
     }
     return NextResponse.next();
   }
 
-  // Admin Guard (Superadmins are explicitly granted fallback access here)
-  if (isAdminRoute) {
-    const hasAdminAccess = userRole === 'superadmin' || (userRole === 'admin' && isAdminApproved);
-    if (!hasAdminAccess) {
+  // 2. Admin‑both routes (dashboard, profile, orders)
+  if (isAdminBothRoute) {
+    if (userRole !== 'admin' && userRole !== 'superadmin') {
       return NextResponse.redirect(new URL('/unauthorized', nextUrl));
     }
+    // Optional: also check adminApproved for regular admins
+    // if (userRole === 'admin' && !(req.auth?.user as any)?.adminApproved) { ... }
     return NextResponse.next();
   }
 
-  // Fallthrough for authenticated users on customer/public routes
+  // 3. Customer routes – already authenticated, allow all roles
+  if (isCustomerProtectedRoute) {
+    return NextResponse.next();
+  }
+
+  // Fallthrough (public pages like /, /auth/signin, etc.)
   return NextResponse.next();
 });
 
 export const config = {
-  // Keeps middleware from running on static assets and API routes
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
   ],
 };

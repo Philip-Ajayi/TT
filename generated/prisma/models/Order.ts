@@ -57,6 +57,7 @@ export type OrderMinAggregateOutputType = {
   discountAmount: runtime.Decimal | null
   discountRuleId: string | null
   discountRuleCode: string | null
+  invoiceIssued: boolean | null
   paymentDate: Date | null
   status: string | null
   createdAt: Date | null
@@ -77,6 +78,7 @@ export type OrderMaxAggregateOutputType = {
   discountAmount: runtime.Decimal | null
   discountRuleId: string | null
   discountRuleCode: string | null
+  invoiceIssued: boolean | null
   paymentDate: Date | null
   status: string | null
   createdAt: Date | null
@@ -97,6 +99,7 @@ export type OrderCountAggregateOutputType = {
   discountAmount: number
   discountRuleId: number
   discountRuleCode: number
+  invoiceIssued: number
   paymentDate: number
   status: number
   createdAt: number
@@ -137,6 +140,7 @@ export type OrderMinAggregateInputType = {
   discountAmount?: true
   discountRuleId?: true
   discountRuleCode?: true
+  invoiceIssued?: true
   paymentDate?: true
   status?: true
   createdAt?: true
@@ -157,6 +161,7 @@ export type OrderMaxAggregateInputType = {
   discountAmount?: true
   discountRuleId?: true
   discountRuleCode?: true
+  invoiceIssued?: true
   paymentDate?: true
   status?: true
   createdAt?: true
@@ -177,6 +182,7 @@ export type OrderCountAggregateInputType = {
   discountAmount?: true
   discountRuleId?: true
   discountRuleCode?: true
+  invoiceIssued?: true
   paymentDate?: true
   status?: true
   createdAt?: true
@@ -284,6 +290,7 @@ export type OrderGroupByOutputType = {
   discountAmount: runtime.Decimal | null
   discountRuleId: string | null
   discountRuleCode: string | null
+  invoiceIssued: boolean
   paymentDate: Date | null
   status: string
   createdAt: Date
@@ -327,6 +334,7 @@ export type OrderWhereInput = {
   discountAmount?: Prisma.DecimalNullableFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.StringNullableFilter<"Order"> | string | null
   discountRuleCode?: Prisma.StringNullableFilter<"Order"> | string | null
+  invoiceIssued?: Prisma.BoolFilter<"Order"> | boolean
   paymentDate?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   status?: Prisma.StringFilter<"Order"> | string
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
@@ -351,6 +359,7 @@ export type OrderOrderByWithRelationInput = {
   discountAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   discountRuleId?: Prisma.SortOrderInput | Prisma.SortOrder
   discountRuleCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  invoiceIssued?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -378,6 +387,7 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   discountAmount?: Prisma.DecimalNullableFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.StringNullableFilter<"Order"> | string | null
   discountRuleCode?: Prisma.StringNullableFilter<"Order"> | string | null
+  invoiceIssued?: Prisma.BoolFilter<"Order"> | boolean
   paymentDate?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   status?: Prisma.StringFilter<"Order"> | string
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
@@ -402,6 +412,7 @@ export type OrderOrderByWithAggregationInput = {
   discountAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   discountRuleId?: Prisma.SortOrderInput | Prisma.SortOrder
   discountRuleCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  invoiceIssued?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -430,6 +441,7 @@ export type OrderScalarWhereWithAggregatesInput = {
   discountAmount?: Prisma.DecimalNullableWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   discountRuleCode?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  invoiceIssued?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
   paymentDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
   status?: Prisma.StringWithAggregatesFilter<"Order"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
@@ -449,6 +461,7 @@ export type OrderCreateInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -472,6 +485,7 @@ export type OrderUncheckedCreateInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -493,6 +507,7 @@ export type OrderUpdateInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -516,6 +531,7 @@ export type OrderUncheckedUpdateInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -538,6 +554,7 @@ export type OrderCreateManyInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -557,6 +574,7 @@ export type OrderUpdateManyMutationInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -576,6 +594,7 @@ export type OrderUncheckedUpdateManyInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -606,6 +625,7 @@ export type OrderCountOrderByAggregateInput = {
   discountAmount?: Prisma.SortOrder
   discountRuleId?: Prisma.SortOrder
   discountRuleCode?: Prisma.SortOrder
+  invoiceIssued?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -635,6 +655,7 @@ export type OrderMaxOrderByAggregateInput = {
   discountAmount?: Prisma.SortOrder
   discountRuleId?: Prisma.SortOrder
   discountRuleCode?: Prisma.SortOrder
+  invoiceIssued?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -655,6 +676,7 @@ export type OrderMinOrderByAggregateInput = {
   discountAmount?: Prisma.SortOrder
   discountRuleId?: Prisma.SortOrder
   discountRuleCode?: Prisma.SortOrder
+  invoiceIssued?: Prisma.SortOrder
   paymentDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -807,6 +829,7 @@ export type OrderCreateWithoutUserInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -828,6 +851,7 @@ export type OrderUncheckedCreateWithoutUserInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -879,6 +903,7 @@ export type OrderScalarWhereInput = {
   discountAmount?: Prisma.DecimalNullableFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.StringNullableFilter<"Order"> | string | null
   discountRuleCode?: Prisma.StringNullableFilter<"Order"> | string | null
+  invoiceIssued?: Prisma.BoolFilter<"Order"> | boolean
   paymentDate?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   status?: Prisma.StringFilter<"Order"> | string
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
@@ -898,6 +923,7 @@ export type OrderCreateWithoutCompanyAddressInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -920,6 +946,7 @@ export type OrderUncheckedCreateWithoutCompanyAddressInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -966,6 +993,7 @@ export type OrderCreateWithoutDeliveryGroupsInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -988,6 +1016,7 @@ export type OrderUncheckedCreateWithoutDeliveryGroupsInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -1024,6 +1053,7 @@ export type OrderUpdateWithoutDeliveryGroupsInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1046,6 +1076,7 @@ export type OrderUncheckedUpdateWithoutDeliveryGroupsInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1066,6 +1097,7 @@ export type OrderCreateWithoutAdminLogsInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -1088,6 +1120,7 @@ export type OrderUncheckedCreateWithoutAdminLogsInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -1124,6 +1157,7 @@ export type OrderUpdateWithoutAdminLogsInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1146,6 +1180,7 @@ export type OrderUncheckedUpdateWithoutAdminLogsInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1166,6 +1201,7 @@ export type OrderCreateManyUserInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -1185,6 +1221,7 @@ export type OrderUpdateWithoutUserInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1206,6 +1243,7 @@ export type OrderUncheckedUpdateWithoutUserInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1227,6 +1265,7 @@ export type OrderUncheckedUpdateManyWithoutUserInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1247,6 +1286,7 @@ export type OrderCreateManyCompanyAddressInput = {
   discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: string | null
   discountRuleCode?: string | null
+  invoiceIssued?: boolean
   paymentDate?: Date | string | null
   status?: string
   createdAt?: Date | string
@@ -1265,6 +1305,7 @@ export type OrderUpdateWithoutCompanyAddressInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1287,6 +1328,7 @@ export type OrderUncheckedUpdateWithoutCompanyAddressInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1308,6 +1350,7 @@ export type OrderUncheckedUpdateManyWithoutCompanyAddressInput = {
   discountAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   discountRuleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discountRuleCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceIssued?: Prisma.BoolFieldUpdateOperationsInput | boolean
   paymentDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1367,6 +1410,7 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   discountAmount?: boolean
   discountRuleId?: boolean
   discountRuleCode?: boolean
+  invoiceIssued?: boolean
   paymentDate?: boolean
   status?: boolean
   createdAt?: boolean
@@ -1392,6 +1436,7 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   discountAmount?: boolean
   discountRuleId?: boolean
   discountRuleCode?: boolean
+  invoiceIssued?: boolean
   paymentDate?: boolean
   status?: boolean
   createdAt?: boolean
@@ -1414,6 +1459,7 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   discountAmount?: boolean
   discountRuleId?: boolean
   discountRuleCode?: boolean
+  invoiceIssued?: boolean
   paymentDate?: boolean
   status?: boolean
   createdAt?: boolean
@@ -1436,6 +1482,7 @@ export type OrderSelectScalar = {
   discountAmount?: boolean
   discountRuleId?: boolean
   discountRuleCode?: boolean
+  invoiceIssued?: boolean
   paymentDate?: boolean
   status?: boolean
   createdAt?: boolean
@@ -1443,7 +1490,7 @@ export type OrderSelectScalar = {
   companyAddressId?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "phoneNumber" | "totalAmount" | "currencyCode" | "totalpickdeliveryfee" | "totalreturndeliveryfee" | "totalserviceamount" | "netamount" | "discountAmount" | "discountRuleId" | "discountRuleCode" | "paymentDate" | "status" | "createdAt" | "updatedAt" | "companyAddressId", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "phoneNumber" | "totalAmount" | "currencyCode" | "totalpickdeliveryfee" | "totalreturndeliveryfee" | "totalserviceamount" | "netamount" | "discountAmount" | "discountRuleId" | "discountRuleCode" | "invoiceIssued" | "paymentDate" | "status" | "createdAt" | "updatedAt" | "companyAddressId", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   deliveryGroups?: boolean | Prisma.Order$deliveryGroupsArgs<ExtArgs>
@@ -1481,6 +1528,7 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     discountAmount: runtime.Decimal | null
     discountRuleId: string | null
     discountRuleCode: string | null
+    invoiceIssued: boolean
     paymentDate: Date | null
     status: string
     createdAt: Date
@@ -1925,6 +1973,7 @@ export interface OrderFieldRefs {
   readonly discountAmount: Prisma.FieldRef<"Order", 'Decimal'>
   readonly discountRuleId: Prisma.FieldRef<"Order", 'String'>
   readonly discountRuleCode: Prisma.FieldRef<"Order", 'String'>
+  readonly invoiceIssued: Prisma.FieldRef<"Order", 'Boolean'>
   readonly paymentDate: Prisma.FieldRef<"Order", 'DateTime'>
   readonly status: Prisma.FieldRef<"Order", 'String'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
