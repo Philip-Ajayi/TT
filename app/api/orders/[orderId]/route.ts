@@ -58,6 +58,7 @@ export async function GET(
         pickLocation: dg.pickLocation,
         returnLocation: dg.returnLocation,
         subOrders: dg.subOrders.map((so) => ({
+          id: so.id,
           name: so.subOrderName,
           quantity: so.quantity,
           finalPrice: so.finalPrice,
