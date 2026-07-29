@@ -1,11 +1,11 @@
 // app/api/discounts/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
@@ -66,14 +66,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
 
   try {
-    const { id } = await params; // <-- fix: await the params
+    const { id } = await params;
     await prisma.discountRule.delete({ where: { id } });
     return NextResponse.json({ message: 'Discount validation tier dropped' });
   } catch (error: any) {
