@@ -37,6 +37,7 @@ export async function GET(
       id: order.id,
       createdAt: order.createdAt,
       status: order.status,
+      invoiceIssued: order.invoiceIssued, 
       currency: order.currencyCode,
       phoneNumber: order.phoneNumber,
       paymentDate: order.paymentDate,
@@ -62,13 +63,12 @@ export async function GET(
           name: so.subOrderName,
           quantity: so.quantity,
           finalPrice: so.finalPrice,
+          status: so.status,
         })),
       })),
     };
-
-    if (role === 'admin' || role === 'super_admin') {
       response.customerName = order.user?.name || null;
-    }
+
 
     return NextResponse.json(response);
   } catch (error) {

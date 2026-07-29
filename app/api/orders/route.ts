@@ -344,6 +344,14 @@ export async function POST(req: Request) {
       createdGroupsPayload.push(groupPayload);
     }
 
+    // ✨ NEW: Generate a shared random pick-delivery code if any group has a pick location
+    let sharedPickCode: string | null = null;
+    const anyPick = createdGroupsPayload.some((g: any) => g.pickLocation != null);
+    if (anyPick) {
+      // random 6‑char alphanumeric, e.g. "X3K9MZ"
+      sharedPickCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
     let totalserviceamount: number | null = containsSpecialOrder ? null : parsedSubOrders.reduce((sum, s) => sum + (s.finalPrice || 0), 0);
     let orderPickFee = accumulatedTotalPickFee;
     let orderReturnFee = accumulatedTotalReturnFee;
@@ -414,6 +422,9 @@ export async function POST(req: Request) {
             pickdeliveryfee: g.pickdeliveryfee,
             returndeliveryfee: g.returndeliveryfee,
             groupNumber: g.groupNumber,
+            // ✨ NEW: assign shared pick code only if group has a pick location
+            pickdeliverycode: g.pickLocation ? sharedPickCode : null,
+            returndeliverycode: null,
             subOrders: {
               create: g.subOrders.map((s: any) => ({
                 clothId: s.clothId,

@@ -2,8 +2,51 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
+import { supabaseAdmin } from '@/lib/supabase'; // service‑role client for storage ops
 
-// POST: Add cloth partial services, variants (with optional variant partial services), or variant partial services
+// ---------------------------------------------------------------------------
+// Helper: upload a file to Supabase Storage and return its public URL
+// ---------------------------------------------------------------------------
+async function uploadImageToSupabase(file: File, bucket: string): Promise<string> {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  const filePath = `cloth-images/${fileName}`; // organise inside a folder
+
+  const { error } = await supabaseAdmin.storage.from(bucket).upload(filePath, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+
+  if (error) {
+    console.error('Supabase upload error:', error);
+    throw new Error('Image upload failed');
+  }
+
+  // Get the public URL (bucket must be public or have appropriate policies)
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
+  return data.publicUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: delete an image from Supabase Storage given its public URL
+// ---------------------------------------------------------------------------
+async function deleteImageFromSupabase(imageUrl: string, bucket: string) {
+  try {
+    // Extract the path after the bucket name, e.g. /storage/v1/object/public/avatars/cloth-images/...
+    const url = new URL(imageUrl);
+    const pathPrefix = `/storage/v1/object/public/${bucket}/`;
+    if (!url.pathname.startsWith(pathPrefix)) return; // not a Supabase storage URL
+
+    const filePath = url.pathname.slice(pathPrefix.length);
+    await supabaseAdmin.storage.from(bucket).remove([filePath]);
+  } catch (err) {
+    console.error('Failed to delete old image:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST: Add cloth partial services, variants, or variant partial services
+// ---------------------------------------------------------------------------
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -11,7 +54,7 @@ export async function POST(
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
 
-  const { id } = await params; // ✅ await the Promise
+  const { id } = await params;
 
   try {
     const body = await req.json();
@@ -164,7 +207,10 @@ export async function POST(
   }
 }
 
+// ---------------------------------------------------------------------------
 // PUT: Edit cloth, variant, cloth partial service, or variant partial service
+//      Cloth updates now accept multipart/form-data for image uploads.
+// ---------------------------------------------------------------------------
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -172,9 +218,90 @@ export async function PUT(
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
 
-  const { id } = await params; // ✅ await the Promise
+  const { id } = await params;
 
   try {
+    const contentType = req.headers.get('content-type') || '';
+
+    // ---------- Multipart form-data (only for cloth image uploads) ----------
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const type = formData.get('type') as string | null;
+
+      if (type !== 'c') {
+        return NextResponse.json(
+          { message: 'Multipart uploads are only supported for cloth (type "c")' },
+          { status: 400 }
+        );
+      }
+
+      const cloth = await prisma.cloth.findUnique({
+        where: { id },
+        include: { variants: true, partialServices: true },
+      });
+      if (!cloth) {
+        return NextResponse.json({ message: 'Cloth not found' }, { status: 404 });
+      }
+
+      // Extract text fields
+      const name = formData.get('name') as string | null;
+      const description = formData.get('description') as string | null;
+      const toggletospecial = formData.get('toggletospecial') === 'true';
+      const toggletopricenull = formData.get('toggletopricenull') === 'true';
+      const priceStr = formData.get('price') as string | null;
+      const price = priceStr ? parseFloat(priceStr) : undefined;
+
+      // Image file
+      const imageFile = formData.get('image') as File | null;
+
+      const data: any = {};
+      if (name !== undefined) data.name = name;
+      if (description !== undefined) data.description = description;
+
+      // Handle image upload
+      if (imageFile && imageFile.size > 0) {
+        // Delete old image if exists
+        if (cloth.imageUrl) {
+          await deleteImageFromSupabase(cloth.imageUrl, 'avatars');
+        }
+        const publicUrl = await uploadImageToSupabase(imageFile, 'avatars');
+        data.imageUrl = publicUrl;
+      }
+
+      // Price logic (same as before)
+      if (toggletopricenull) {
+        data.basePrice = null;
+        data.isPriceNull = true;
+      } else if (toggletospecial) {
+        if (cloth.variants.length > 0) {
+          return NextResponse.json(
+            { message: 'Cannot unset price null flag because cloth has variants.' },
+            { status: 400 }
+          );
+        }
+        data.basePrice = null;
+        data.isPriceNull = false;
+      } else if (price !== undefined) {
+        if (cloth.isPriceNull) {
+          return NextResponse.json(
+            { message: 'Cannot set base price because isPriceNull is true. Use toggle to change.' },
+            { status: 400 }
+          );
+        }
+        if (cloth.variants.length > 0) {
+          return NextResponse.json(
+            { message: 'Cannot set a base price on a cloth that already has variants.' },
+            { status: 400 }
+          );
+        }
+        data.basePrice = price;
+      }
+
+      await prisma.cloth.update({ where: { id }, data });
+      return NextResponse.json({ message: 'Cloth updated successfully' });
+    }
+
+    // ---------- JSON (original behaviour for all types) ----------
     const body = await req.json();
     const { type } = body;
     if (!type || !['c', 'v', 'cps', 'vps'].includes(type)) {
@@ -208,21 +335,23 @@ export async function PUT(
     }
 
     if (!existing) {
-      return NextResponse.json(
-        { message: 'Entity not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Entity not found' }, { status: 404 });
     }
 
     const data: any = {};
-    const { name, price, image, description, toggletospecial, toggletopricenull } =
-      body;
+    const { name, price, image, description, toggletospecial, toggletopricenull } = body;
 
     if (name !== undefined) data.name = name;
 
-    // --- Cloth updates ---
+    // --- Cloth updates (JSON) ---
     if (type === 'c') {
-      if (image !== undefined) data.imageUrl = image;
+      if (image !== undefined) {
+        // If a new URL is provided and different from existing, delete old image
+        if (existing.imageUrl && existing.imageUrl !== image) {
+          await deleteImageFromSupabase(existing.imageUrl, 'avatars');
+        }
+        data.imageUrl = image;
+      }
       if (description !== undefined) data.description = description;
 
       if (toggletopricenull === true) {
@@ -231,10 +360,7 @@ export async function PUT(
       } else if (toggletospecial === true) {
         if (existing.variants.length > 0) {
           return NextResponse.json(
-            {
-              message:
-                'Cannot unset price null flag because cloth has variants.',
-            },
+            { message: 'Cannot unset price null flag because cloth has variants.' },
             { status: 400 }
           );
         }
@@ -244,19 +370,13 @@ export async function PUT(
         if (price !== undefined) {
           if (existing.isPriceNull) {
             return NextResponse.json(
-              {
-                message:
-                  'Cannot set base price because isPriceNull is true. Use toggle to change.',
-              },
+              { message: 'Cannot set base price because isPriceNull is true. Use toggle to change.' },
               { status: 400 }
             );
           }
           if (existing.variants.length > 0) {
             return NextResponse.json(
-              {
-                message:
-                  'Cannot set a base price on a cloth that already has variants.',
-              },
+              { message: 'Cannot set a base price on a cloth that already has variants.' },
               { status: 400 }
             );
           }
@@ -275,10 +395,7 @@ export async function PUT(
           (cloth.basePrice && cloth.basePrice > 0)
         ) {
           return NextResponse.json(
-            {
-              message:
-                'Cannot unset price null flag because cloth has partial services or base price > 0.',
-            },
+            { message: 'Cannot unset price null flag because cloth has partial services or base price > 0.' },
             { status: 400 }
           );
         }
@@ -288,10 +405,7 @@ export async function PUT(
         if (price !== undefined) {
           if (existing.isPriceNull) {
             return NextResponse.json(
-              {
-                message:
-                  'Cannot set price because variant isPriceNull is true.',
-              },
+              { message: 'Cannot set price because variant isPriceNull is true.' },
               { status: 400 }
             );
           }
@@ -300,7 +414,7 @@ export async function PUT(
       }
     }
 
-    // --- Partial service updates (now with toggletospecial) ---
+    // --- Partial service updates ---
     else if (type === 'cps' || type === 'vps') {
       if (toggletospecial === true) {
         data.price = null;
@@ -315,31 +429,24 @@ export async function PUT(
     } else if (type === 'v') {
       await prisma.variant.update({ where: { id: entityId }, data });
     } else if (type === 'cps') {
-      await prisma.clothPartialService.update({
-        where: { id: entityId },
-        data,
-      });
+      await prisma.clothPartialService.update({ where: { id: entityId }, data });
     } else if (type === 'vps') {
-      await prisma.variantPartialService.update({
-        where: { id: entityId },
-        data,
-      });
+      await prisma.variantPartialService.update({ where: { id: entityId }, data });
     }
 
     return NextResponse.json({ message: 'Entity updated successfully' });
   } catch (error: any) {
     console.error(error);
     if (error.code === 'P2025') {
-      return NextResponse.json(
-        { message: 'Entity not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Entity not found' }, { status: 404 });
     }
     return NextResponse.json({ message: 'Edit failed' }, { status: 500 });
   }
 }
 
-// DELETE
+// ---------------------------------------------------------------------------
+// DELETE: Remove entity and clean up associated images (cloth only)
+// ---------------------------------------------------------------------------
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -347,7 +454,7 @@ export async function DELETE(
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
 
-  const { id } = await params; // ✅ await the Promise
+  const { id } = await params;
 
   try {
     const body = await req.json();
@@ -361,7 +468,12 @@ export async function DELETE(
 
     const entityId = id;
 
+    // Before deleting a cloth, remove its stored image (if any)
     if (type === 'c') {
+      const cloth = await prisma.cloth.findUnique({ where: { id: entityId } });
+      if (cloth?.imageUrl) {
+        await deleteImageFromSupabase(cloth.imageUrl, 'avatars');
+      }
       await prisma.cloth.delete({ where: { id: entityId } });
     } else if (type === 'v') {
       await prisma.variant.delete({ where: { id: entityId } });
@@ -374,15 +486,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Deleted successfully' });
   } catch (error: any) {
     if (error.code === 'P2025') {
-      return NextResponse.json(
-        { message: 'Entity not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Entity not found' }, { status: 404 });
     }
     console.error(error);
-    return NextResponse.json(
-      { message: 'Deletion failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Deletion failed' }, { status: 500 });
   }
 }

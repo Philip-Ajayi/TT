@@ -2,8 +2,51 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
+import { supabaseAdmin } from '@/lib/supabase'; // service‑role client for storage
 import bcrypt from 'bcrypt';
 
+// ---------------------------------------------------------------------------
+// Helper: upload a file to Supabase Storage and return its public URL
+// ---------------------------------------------------------------------------
+async function uploadImageToSupabase(file: File, bucket: string): Promise<string> {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  const filePath = `profiles/${fileName}`; // organised inside a folder
+
+  const { error } = await supabaseAdmin.storage.from(bucket).upload(filePath, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+
+  if (error) {
+    console.error('Supabase upload error:', error);
+    throw new Error('Image upload failed');
+  }
+
+  // Get public URL (bucket must be public or have appropriate policies)
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
+  return data.publicUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: delete an image from Supabase Storage given its public URL
+// ---------------------------------------------------------------------------
+async function deleteImageFromSupabase(imageUrl: string, bucket: string) {
+  try {
+    const url = new URL(imageUrl);
+    const pathPrefix = `/storage/v1/object/public/${bucket}/`;
+    if (!url.pathname.startsWith(pathPrefix)) return; // not a Supabase storage URL
+
+    const filePath = url.pathname.slice(pathPrefix.length);
+    await supabaseAdmin.storage.from(bucket).remove([filePath]);
+  } catch (err) {
+    console.error('Failed to delete old image:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/profile – unchanged
+// ---------------------------------------------------------------------------
 export async function GET() {
   const authCheck = await validateRouteAuth(true);
   if (authCheck.error) return authCheck.error;
@@ -18,6 +61,7 @@ export async function GET() {
         role: true,
         adminApproved: true,
         password: true,
+        image: true,                 // ← now included in select
         accounts: {
           where: { provider: 'google' },
           select: { id: true },
@@ -55,6 +99,7 @@ export async function GET() {
       companyAddressName,
       hasPassword: !!user.password,
       hasGoogleCredential: user.accounts.length > 0,
+      image: user.image,            // ← return stored image URL
       addresses: user.addressBook.map((addr) => ({
         id: addr.id,
         label: addr.label,
@@ -68,6 +113,9 @@ export async function GET() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// POST /api/profile – refactored: changeImage now accepts multipart/form-data
+// ---------------------------------------------------------------------------
 export async function POST(req: Request) {
   const authCheck = await validateRouteAuth(true);
   if (authCheck.error) return authCheck.error;
@@ -75,6 +123,53 @@ export async function POST(req: Request) {
   const { id } = authCheck.session.user as any;
 
   try {
+    // Detect if request is multipart (file upload)
+    const contentType = req.headers.get('content-type') || '';
+
+    // ---------- Multipart (profile picture upload) ----------
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const action = formData.get('action') as string;
+
+      if (action !== 'changeImage') {
+        return NextResponse.json(
+          { message: 'Multipart requests are only supported for action "changeImage"' },
+          { status: 400 }
+        );
+      }
+
+      const imageFile = formData.get('image') as File | null;
+      if (!imageFile || imageFile.size === 0) {
+        return NextResponse.json({ message: 'No image file provided' }, { status: 400 });
+      }
+
+      // Fetch current user's image URL to delete it after upload
+      const currentUser = await prisma.user.findUnique({
+        where: { id },
+        select: { image: true },
+      });
+
+      // Upload new image
+      const publicUrl = await uploadImageToSupabase(imageFile, 'avatars');
+
+      // Delete old image from storage if it exists
+      if (currentUser?.image) {
+        await deleteImageFromSupabase(currentUser.image, 'avatars');
+      }
+
+      // Update database with the new URL
+      await prisma.user.update({
+        where: { id },
+        data: { image: publicUrl },
+      });
+
+      return NextResponse.json({
+        message: 'Profile image updated successfully',
+        imageUrl: publicUrl,
+      });
+    }
+
+    // ---------- JSON (all other actions) ----------
     const body = await req.json();
     const { action } = body;
 
@@ -131,7 +226,6 @@ export async function POST(req: Request) {
         });
         return NextResponse.json(newAddress);
       } catch (error: any) {
-        // Prisma unique constraint violation (userId + label)
         if (error.code === 'P2002') {
           return NextResponse.json(
             { message: 'A label with this name already exists for your account. Please choose a different label.' },
@@ -152,7 +246,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: 'Label cannot be empty' }, { status: 400 });
       }
 
-      // Verify ownership
       const existing = await prisma.customerAddress.findFirst({
         where: { id: addressId, userId: id },
       });
@@ -160,7 +253,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: 'Address not found or unauthorized' }, { status: 404 });
       }
 
-      // Check if another address with the same label exists for this user (excluding current)
       const duplicate = await prisma.customerAddress.findFirst({
         where: {
           userId: id,
@@ -209,14 +301,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Password updated successfully' });
     }
 
-    // 5. Update Profile Picture
+    // 5. (Removed – the old JSON‑based changeImage is now handled via multipart)
+    //    If you still want to support an image URL via JSON, keep a fallback action:
     if (action === 'changeImage') {
-      const { image } = body;
-      await prisma.user.update({
-        where: { id },
-        data: { image },
-      });
-      return NextResponse.json({ message: 'Profile image updated successfully' });
+      return NextResponse.json(
+        { message: 'Please use multipart/form-data to upload an image.' },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ message: 'Invalid action provided' }, { status: 400 });
@@ -226,6 +317,9 @@ export async function POST(req: Request) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// PUT /api/profile – unchanged
+// ---------------------------------------------------------------------------
 export async function PUT(req: Request) {
   const authCheck = await validateRouteAuth(true);
   if (authCheck.error) return authCheck.error;
@@ -261,6 +355,9 @@ export async function PUT(req: Request) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// DELETE /api/profile – unchanged
+// ---------------------------------------------------------------------------
 export async function DELETE(req: Request) {
   const authCheck = await validateRouteAuth(true);
   if (authCheck.error) return authCheck.error;
