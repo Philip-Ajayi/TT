@@ -32,14 +32,16 @@ export default auth((req) => {
 
   // --- AUTHENTICATION CHECK ---
   if (!isAuthenticated) {
-    // Any protected route (admin or customer) → redirect to login
-    if (isAdminBothRoute || isSuperAdminOnlyRoute || isCustomerProtectedRoute) {
-      // Use a single sign‑in page (NextAuth default)
-      return NextResponse.redirect(new URL('/auth/signin', nextUrl));
-      // If you still have a separate /login page, change to:
-      // return NextResponse.redirect(new URL('/login', nextUrl));
+    // Admin protected routes → redirect to admin login
+    if (isAdminBothRoute || isSuperAdminOnlyRoute) {
+      return NextResponse.redirect(new URL('/admin/login', nextUrl));
     }
-    return NextResponse.next(); // public routes
+    // Customer protected routes → redirect to customer login
+    if (isCustomerProtectedRoute) {
+      return NextResponse.redirect(new URL('/login', nextUrl));
+    }
+    // Public routes (e.g., /, /signup) – allow
+    return NextResponse.next();
   }
 
   // --- AUTHORIZATION CHECKS ---
