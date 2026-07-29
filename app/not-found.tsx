@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { ArrowLeft, Home, MapPin, Search } from "lucide-react";
+import { Home } from "lucide-react";
 
 import gsap from "gsap";
 
@@ -105,31 +105,6 @@ export default function NotFound() {
             >
               <Home className="h-4 w-4" />
               Go Home
-            </Link>
-            <Link
-              href="#services"
-              className="inline-flex items-center gap-2 rounded-xl border border-navy-deep/20 dark:border-white/10 px-7 py-3.5 text-sm font-bold uppercase tracking-wider text-slate-blue dark:text-platinum transition-colors hover:border-gold-polished/40 dark:hover:border-gold-metallic/40"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Browse Services
-            </Link>
-          </div>
-
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs text-slate-blue/70 dark:text-platinum/70">
-            <Link
-              href="#coverage"
-              className="flex items-center gap-1.5 transition-colors hover:text-gold-polished dark:hover:text-gold-metallic"
-            >
-              <MapPin className="h-3.5 w-3.5" />
-              Check Coverage
-            </Link>
-            <span className="text-navy-deep/20 dark:text-white/10">|</span>
-            <Link
-              href="#scheduler"
-              className="flex items-center gap-1.5 transition-colors hover:text-gold-polished dark:hover:text-gold-metallic"
-            >
-              <Search className="h-3.5 w-3.5" />
-              Schedule Pickup
             </Link>
           </div>
         </motion.div>
