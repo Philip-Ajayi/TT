@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 import { calculateMilesDistance } from '@/lib/utils/geo';
 import { determineSubOrderPrice, determineDeliveryFee, applyDiscountRule } from '@/lib/utils/order-helpers';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma/client';
 
 export async function GET(
   req: NextRequest,
