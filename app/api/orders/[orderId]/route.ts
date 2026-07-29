@@ -1,5 +1,5 @@
 // app/api/orders/[orderId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 import { calculateMilesDistance } from '@/lib/utils/geo';
@@ -7,8 +7,8 @@ import { determineSubOrderPrice, determineDeliveryFee, applyDiscountRule } from 
 import { Prisma } from '@prisma/client';
 
 export async function GET(
-  req: Request,
-  { params }: { params: { orderId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   const authCheck = await validateRouteAuth(true);
   if (authCheck.error) return authCheck.error;
@@ -82,8 +82,8 @@ export async function GET(
 // PUT handler
 // ----------------------------------------------------------------------
 export async function PUT(
-  req: Request,
-  { params }: { params: { orderId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   const authCheck = await validateRouteAuth(true);
   if (authCheck.error) return authCheck.error;
