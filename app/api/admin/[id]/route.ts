@@ -1,11 +1,11 @@
 // app/api/admin/[id]/route.ts (PATCH part)
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authCheck = await validateRouteAuth(false);
   if (authCheck.error) return authCheck.error;
@@ -18,7 +18,7 @@ export async function PATCH(
     );
   }
 
-  const adminId = params.id;
+  const { id: adminId } = await params;   // ← Await the promise
 
   try {
     const body = await req.json();
