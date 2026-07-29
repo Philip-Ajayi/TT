@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateRouteAuth } from '@/lib/auth-util';
-import { Prisma } from '@prisma/client';
+
 
 export async function GET(req: Request) {
   const authCheck = await validateRouteAuth(true);
