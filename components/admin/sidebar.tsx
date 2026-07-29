@@ -3,6 +3,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { X, LayoutDashboard, Package, MapPin, Shirt, PenTool, Coins, Truck, Clock, Tag, Shield, DollarSign, User, LogOut } from "lucide-react";
@@ -52,9 +53,15 @@ export default function AdminSidebar({ isOpen, onClose }: SidebarProps) {
           onClick={onClose}
           className="flex items-center gap-2 group"
         >
-          <span className="text-xl font-black uppercase tracking-widest bg-gradient-to-r from-gold-polished via-gold-metallic to-gold-pastel bg-clip-text text-transparent">
-            TT Laundry
-          </span>
+          <div className="relative h-12 w-12">
+            <Image
+              src="/Logo.png"
+              alt="Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
         </Link>
         {/* Close button (mobile) */}
         <button

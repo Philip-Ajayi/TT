@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBasket, Sun, Moon, Coins, Menu, X, User, ChevronDown, LogOut } from "lucide-react";
 import { useCart, CurrencyInfo } from "@/context/cart-context";
 import { useSession, signOut } from "next-auth/react";
@@ -81,9 +82,15 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <span className="text-xl font-black uppercase tracking-widest bg-gradient-to-r from-gold-polished via-gold-metallic to-gold-pastel bg-clip-text text-transparent group-hover:opacity-80 transition-opacity">
-              TT Laundry
-            </span>
+            <div className="relative h-12 w-12">
+              <Image
+                src="/Logo.png"
+                alt="Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Desktop Controls */}
